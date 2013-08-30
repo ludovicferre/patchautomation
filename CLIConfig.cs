@@ -19,6 +19,7 @@ namespace Symantec.CWoC {
         private bool _Dry_Run;
         private bool _Test_Run;
         private bool _Print_Version;
+        private bool _CreateDuplicates;
         private string _Vendor_Name;
         private string _custom_sp;
 
@@ -43,6 +44,7 @@ namespace Symantec.CWoC {
             _Dry_Run = false;
             _Test_Run = false;
             _locale = "EN";
+            _CreateDuplicates = false;
 
             _type = type;
 
@@ -155,6 +157,14 @@ namespace Symantec.CWoC {
             }
             set {
                 _custom_sp = value;
+            }
+        }
+        public bool Create_Duplicates {
+            get {
+                return _CreateDuplicates;
+            }
+            set {
+                _CreateDuplicates = value;
             }
         }
 

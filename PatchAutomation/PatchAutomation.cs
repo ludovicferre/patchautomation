@@ -114,8 +114,10 @@ namespace Symantec.CWoC {
                         if (!config.Dry_Run) {
                             PatchAPI wrap = new PatchAPI();
                             wrap.CreateUpdatePolicy(policy_name, bulletin.ToString(), config.Target_Guid_Test, true);
-
                             EventLog.ReportInfo(String.Format("SoftwareUpdateAdvertisement policy {0} (targetguid={1}) was created.", policy_name, config.Target_Guid_Test));
+                            if (config.Create_Duplicates) {
+                                DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
+                            }
                             i++;
                         }
                         Console.WriteLine("\tSoftware update policy created!");
@@ -204,7 +206,22 @@ namespace Symantec.CWoC {
             return rc;
         }
 
+        public void ensure_exclusion_table_exist() {
+            try {
+                using (DatabaseContext context = DatabaseContext.GetContext()) {
+                    SqlCommand cmd = context.CreateCommand() as SqlCommand;
+
+                    cmd.CommandText = "if not exists (select 1 from sys.objects where type='u' and name='patchautomation_excluded') create table patchautomation_excluded (bulletin varchar(256));";
+                    cmd.ExecuteNonQuery();
+                }
+            } catch (Exception e) {
+                Console.WriteLine("Error: {0}\nException message = {1}\nStack trace = {2}.", e.Message, e.InnerException, e.StackTrace);
+            }
+        }
+
         private DataTable GetExcludedBulletins() {
+
+            ensure_exclusion_table_exist();
             String sql = Constant.PATCH_EXCLUSION_QUERY;
             DataTable t = DatabaseAPI.GetTable(sql);
 

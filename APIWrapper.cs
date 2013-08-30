@@ -137,6 +137,24 @@ namespace Symantec.CWoC.APIWrappers
             return t;
         }
 
+        public static int ExecuteNonQuery(string sqlStatement) {
+
+            int i = 0;
+
+            try {
+                using (DatabaseContext context = DatabaseContext.GetContext()) {
+                    SqlCommand sql_cmd = context.CreateCommand() as SqlCommand;
+                    sql_cmd.CommandText = sqlStatement;
+
+                    return sql_cmd.ExecuteNonQuery();
+                }
+            } catch (Exception e) {
+                LoggingAPI.ReportException(e);
+            }
+            return i;
+
+        }
+
     }
 
     class LoggingAPI

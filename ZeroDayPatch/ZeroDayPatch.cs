@@ -20,12 +20,10 @@ using Symantec.CWoC.APIWrappers;
 namespace Symantec.CWoC {
     class ZeroDayPatch {
         private CliConfig config;
-        private bool createDuplicatePolicies;
 
         static int Main(string[] args) {
             if (SecurityAPI.is_user_admin()) {
                 ZeroDayPatch automate = new ZeroDayPatch();
-                automate.createDuplicatePolicies = true;
                 automate.config = new CliConfig(config_types.ZeroDayPatch);
                 CliInit init;
                 if (args.Length == 1 && args[0].StartsWith("/config=")) {
@@ -100,7 +98,7 @@ namespace Symantec.CWoC {
                     string policyGuid = "";
                     policyGuid = wfsvc.ResolveToPolicies(bulletin.ToString());
 
-                    if (policyGuid == "" || policyGuid.Length == 0 || this.createDuplicatePolicies) {
+                    if (policyGuid == "" || policyGuid.Length == 0 || config.Create_Duplicates) {
                         Console.WriteLine("\t... create a policy for the bulletin now.");
                         if (!config.Dry_Run) {
                             if (config.Target_Guid == "") {
@@ -109,6 +107,10 @@ namespace Symantec.CWoC {
                             } else {
                                 PatchAPI wrap = new PatchAPI();
                                 wrap.CreateUpdatePolicy(name, bulletin.ToString(), config.Target_Guid, true);
+                            }
+                            // Added the bulletin to the exclusion list here
+                            if (config.Create_Duplicates) {
+                                DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
                             }
                             i++;
                         }
@@ -127,6 +129,7 @@ namespace Symantec.CWoC {
         }
 
         private DataTable GetExcludedBulletins() {
+            ensure_exclusion_table_exist();
             String sql = Constant.PATCH_EXCLUSION_QUERY;
             DataTable t = DatabaseAPI.GetTable(sql);
 
@@ -136,7 +139,7 @@ namespace Symantec.CWoC {
         private DataTable GetExistingBulletins() {
             string sp_used;
 
-            if (config.Vulnerable && procedure_installed()) {
+            if (procedure_installed() && config.Vulnerable) {
                 sp_used = @"exec [ZeroDayPatch_GetVulnerableMachines-" + Constant.ZERODAY_SCHEMA_VERSION + "]";
             } else if (config.Patch_All_Vendors) {
                 sp_used = @"exec spPMCoreReport_SoftwareBulletinSummary";
@@ -239,13 +242,27 @@ namespace Symantec.CWoC {
             return bulletin_collection;
         }
 
+        public void ensure_exclusion_table_exist() {
+            try {
+                using (DatabaseContext context = DatabaseContext.GetContext()) {
+                    SqlCommand cmd = context.CreateCommand() as SqlCommand;
+
+                    cmd.CommandText = "if not exists (select 1 from sys.objects where type='u' and name='patchautomation_excluded') create table patchautomation_excluded (bulletin varchar(256));";
+                    cmd.ExecuteNonQuery();
+                }
+            } catch (Exception e) {
+                Console.WriteLine("Error: {0}\nException message = {1}\nStack trace = {2}.", e.Message, e.InnerException, e.StackTrace);
+            }
+        }
+
         public bool procedure_installed() {
             try {
                 string test_sql = @"select 1 from sysobjects where type = 'P' and name = 'ZeroDayPatch_GetVulnerableMachines-" + Constant.ZERODAY_SCHEMA_VERSION + "'";
+
                 using (DatabaseContext context = DatabaseContext.GetContext()) {
                     SqlCommand cmd = context.CreateCommand() as SqlCommand;
-                    cmd.CommandText = test_sql;
 
+                    cmd.CommandText = test_sql;
                     Object result = cmd.ExecuteScalar();
                     if (Convert.ToInt32(result) == 1) {
                         return true;

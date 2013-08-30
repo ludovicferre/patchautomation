@@ -101,6 +101,9 @@ namespace Symantec.CWoC {
                     } else if (arg_l.StartsWith("/vendor=")) {
                         config.Vendor_Name = arg_l.Substring("/vendor=".Length);
                         ++valid_args;
+                    } else if (arg_l == "/duplicates") {
+                        config.Create_Duplicates = true;
+                        ++valid_args;
                     }
                 }
             } catch {

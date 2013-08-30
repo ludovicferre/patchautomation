@@ -6,13 +6,11 @@ namespace Symantec.CWoC
 {
     class Constant
     {
-        public const string VERSION = "0.7.1";
+        public const string VERSION = "8";
         public const string ZERODAY_SCHEMA_VERSION = "0003";
 
         #region public const string PATCH_EXCLUSION_QUERY
-        public const string PATCH_EXCLUSION_QUERY = @"
-if exists (select 1 from sys.objects where name = 'patchautomation_excluded')
-    select bulletin from patchautomation_excluded";
+        public const string PATCH_EXCLUSION_QUERY = @"if exists (select 1 from sys.objects where name = 'patchautomation_excluded') select bulletin from patchautomation_excluded";
         #endregion
 
         #region private const string COMMON_FEATURES
@@ -74,6 +72,14 @@ if exists (select 1 from sys.objects where name = 'patchautomation_excluded')
     /debug
         Output extra information on the command line to allow debugging or
         reporting problems to Symantec Connect.
+
+    /duplicates
+        Use this command if you want the tool to generate duplicate
+        policies. This is usefull if you want, for example, to migrate
+        policies from a parent to a child SMP without disruption.
+
+        Note! Duplicated and new entries will be added to the exclusion 
+        table in the database for safety reasons. 
 
     /version
         Print out the current version of the tool.
