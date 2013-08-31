@@ -155,6 +155,22 @@ namespace Symantec.CWoC.APIWrappers
 
         }
 
+        public static int ExecuteScalar(string sqlStatement) {
+            try {
+                using (DatabaseContext context = DatabaseContext.GetContext()) {
+                    SqlCommand cmd = context.CreateCommand() as SqlCommand;
+
+                    cmd.CommandText = sqlStatement;
+                    Object result = cmd.ExecuteScalar();
+
+                    return Convert.ToInt32(result);
+                }
+            } catch (Exception e) {
+                Console.WriteLine("Error: {0}\nException message = {1}\nStack trace = {2}.", e.Message, e.InnerException, e.StackTrace);
+                return 0;
+            }
+        }
+
     }
 
     class LoggingAPI
