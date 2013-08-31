@@ -92,7 +92,7 @@ namespace Symantec.CWoC
 
     /duplicates
         Use this command if you want the tool to generate duplicate
-        policies. This is usefull if you want, for example, to migrate
+        policies. This is useful if you want, for example, to migrate
         policies from a parent to a child SMP without disruption.
 
         Note! Duplicated and new entries will be added to the exclusion 
