@@ -206,22 +206,9 @@ namespace Symantec.CWoC {
             return rc;
         }
 
-        public void ensure_exclusion_table_exist() {
-            try {
-                using (DatabaseContext context = DatabaseContext.GetContext()) {
-                    SqlCommand cmd = context.CreateCommand() as SqlCommand;
-
-                    cmd.CommandText = "if not exists (select 1 from sys.objects where type='u' and name='patchautomation_excluded') create table patchautomation_excluded (bulletin varchar(256));";
-                    cmd.ExecuteNonQuery();
-                }
-            } catch (Exception e) {
-                Console.WriteLine("Error: {0}\nException message = {1}\nStack trace = {2}.", e.Message, e.InnerException, e.StackTrace);
-            }
-        }
-
         private DataTable GetExcludedBulletins() {
 
-            ensure_exclusion_table_exist();
+            DatabaseAPI.ExecuteNonQuery(Constant.PATCH_EXCLUSION_CREATION);
             String sql = Constant.PATCH_EXCLUSION_QUERY;
             DataTable t = DatabaseAPI.GetTable(sql);
 
