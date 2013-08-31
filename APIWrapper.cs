@@ -128,19 +128,16 @@ namespace Symantec.CWoC.APIWrappers
                         t.Load(r);
                     }
                 }
+                return t;
             }
             catch (Exception e)
             {
                 LoggingAPI.ReportException(e);
+                throw new Exception("Failed to execute SQL command...");
             }
-
-            return t;
         }
 
         public static int ExecuteNonQuery(string sqlStatement) {
-
-            int i = 0;
-
             try {
                 using (DatabaseContext context = DatabaseContext.GetContext()) {
                     SqlCommand sql_cmd = context.CreateCommand() as SqlCommand;
@@ -150,8 +147,8 @@ namespace Symantec.CWoC.APIWrappers
                 }
             } catch (Exception e) {
                 LoggingAPI.ReportException(e);
+                throw new Exception("Failed to execute non query SQL command...");
             }
-            return i;
 
         }
 
@@ -167,7 +164,7 @@ namespace Symantec.CWoC.APIWrappers
                 }
             } catch (Exception e) {
                 Console.WriteLine("Error: {0}\nException message = {1}\nStack trace = {2}.", e.Message, e.InnerException, e.StackTrace);
-                return 0;
+                throw new Exception("Failed to execute scalar SQL command...");
             }
         }
 
