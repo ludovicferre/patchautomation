@@ -106,7 +106,7 @@ namespace Symantec.CWoC {
                     string policyGuids = "";
                     policyGuids = wfsvc.ResolveToPolicies(bulletin.ToString());
 
-                    if (policyGuids == "" || policyGuids.Length == 0) {
+                    if (policyGuids == "" || policyGuids.Length == 0 || config.Create_Duplicates) {
                         string date = DateTime.Today.ToString("yyyy-MM-dd");
                         string policy_name = bulletin_name + ", " + config.POLICY_TEST + ", " + date;
 

@@ -9,8 +9,25 @@ namespace Symantec.CWoC
         public const string VERSION = "8";
         public const string ZERODAY_SCHEMA_VERSION = "0003";
 
-        #region public const string PATCH_EXCLUSION_QUERY
+        #region SQL STRINGS
         public const string PATCH_EXCLUSION_QUERY = @"if exists (select 1 from sys.objects where name = 'patchautomation_excluded') select bulletin from patchautomation_excluded";
+
+        public const string PATCH_EXCLUSION_CREATION = @"
+            IF NOT EXISTS(select 1 from sys.objects where type ='U' and name = 'PatchAutomation_Excluded')
+            BEGIN
+            CREATE TABLE [PatchAutomation_Excluded](
+	            [_id] [int] IDENTITY(1,1) NOT NULL,
+	            [Bulletin] [nvarchar](255) NOT NULL,
+	            [CreateDate] [datetime] NULL,
+             CONSTRAINT [pk_PatchAutomation_Excluded] PRIMARY KEY CLUSTERED
+            (
+	            [Bulletin] ASC
+            )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+            ) ON [PRIMARY]
+
+            ALTER TABLE [PatchAutomation_Excluded] ADD  DEFAULT (getdate()) FOR [CreateDate]
+            END
+            ";
         #endregion
 
         #region private const string COMMON_FEATURES
