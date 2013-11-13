@@ -89,7 +89,20 @@ namespace Symantec.CWoC {
                     } else {
                         Console.WriteLine("\t... bulletin will be stagged now.");
                         if (!config.Dry_Run) {
-                            wfsvc.EnsureStaged(bulletin.ToString(), true);
+                            int k = 0; // Retry the stagging up to 3 times...
+                        retry_staging:
+                            try {
+                                wfsvc.EnsureStaged(bulletin.ToString(), true);
+                            } catch {
+                                k++;
+                            }
+                            if (k < 3) {
+                                goto retry_staging;
+                            } else { // Retried 3 times - we quit and document the problem
+                                DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
+                                Console.WriteLine("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", name);
+                                continue; // Go to the next bulletin
+                            }
                         }
                         Console.WriteLine("\tBulletin is now stagged.");
                     }
@@ -101,24 +114,38 @@ namespace Symantec.CWoC {
                     if (policyGuid == "" || policyGuid.Length == 0 || config.Create_Duplicates) {
                         Console.WriteLine("\t... create a policy for the bulletin now.");
                         if (!config.Dry_Run) {
-                            if (config.Target_Guid == "") {
-                                PatchAPI wrap = new PatchAPI();
-                                wrap.CreateUpdatePolicy(name, bulletin.ToString(), true);
+                            int j = 0; // Used for retry count
+                        retry_create_policy:
+                            try {
+                                if (config.Target_Guid == "") {
+                                    PatchAPI wrap = new PatchAPI();
+                                    wrap.CreateUpdatePolicy(name, bulletin.ToString(), true);
+                                } else {
+                                    PatchAPI wrap = new PatchAPI();
+                                    wrap.CreateUpdatePolicy(name, bulletin.ToString(), config.Target_Guid, true);
+                                }
+                                // Added the bulletin to the exclusion list here
+                                if (config.Create_Duplicates) {
+                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
+                                }
+                                i++;
+                            } catch {
+                                j++;
+                            }
+                            if (j < 3) {
+                                goto retry_create_policy; // Retry ceiling not reach - let's do it again.
                             } else {
-                                PatchAPI wrap = new PatchAPI();
-                                wrap.CreateUpdatePolicy(name, bulletin.ToString(), config.Target_Guid, true);
-                            }
-                            // Added the bulletin to the exclusion list here
-                            if (config.Create_Duplicates) {
+                                // Retried 3 times - we quit and document the problem
                                 DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
+                                Console.WriteLine("Failed to create policy for bulletin {0} 3 times - the bulletin is now excluded.", name);
+                                continue; // Go to the next bulletin
                             }
-                            i++;
                         }
                         Console.WriteLine("\tSoftware update policy created!");
                     } else {
                         Console.WriteLine("\tA policy already exists for this bulletin.");
                     }
-                    if (i == 10 && config.Test_Run)
+                    if (i > 10 && config.Test_Run)
                         break;
                 }
             } catch (Exception e) {
