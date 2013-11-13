@@ -107,8 +107,12 @@ namespace Symantec.CWoC {
                                 if (j++ < 3) {
                                     goto retry_stagging;
                                 } else {
-                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
-                                    EventLog.ReportError(String.Format("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", bulletin_name));
+                                    if (config.ExcludeOnFail) {
+                                        DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
+                                        EventLog.ReportError(String.Format("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", bulletin_name));
+                                    } else {
+                                        EventLog.ReportError(String.Format("Failed to stage bulletin {0} 3 times - skipping the bulletin now.", bulletin_name));
+                                    }
                                     continue;
                                 }
                             }
@@ -133,9 +137,13 @@ namespace Symantec.CWoC {
                             } catch {
                                 if (k++ < 3) {
                                     goto retry_policy_creation;
-                                } else {
-                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
-                                    EventLog.ReportError(String.Format("Failed to create policy for bulletin {0} 3 times - the bulletin is now excluded.", bulletin_name));
+                                } else { // Failed three times - skip or exclude based on CLI config
+                                    if (config.ExcludeOnFail) {
+                                        DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
+                                        EventLog.ReportError(String.Format("Failed to create policy for bulletin {0} 3 times - the bulletin is now excluded.", bulletin_name));
+                                    } else {
+                                        EventLog.ReportError(String.Format("Failed to create policy for bulletin {0} 3 times - skipping the bulletin now.", bulletin_name));
+                                    }
                                     continue;
                                 }
                             }
