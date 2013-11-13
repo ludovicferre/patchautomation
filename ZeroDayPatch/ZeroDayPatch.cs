@@ -97,8 +97,12 @@ namespace Symantec.CWoC {
                                 if (k++ < 3) {
                                     goto retry_staging;
                                 } else { // Retried 3 times - we quit and document the problem
-                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
-                                    Console.WriteLine("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", name);
+                                    if (config.ExcludeOnFail) {
+                                        DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
+                                        Console.WriteLine("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", name);
+                                    } else {
+                                        Console.WriteLine("Failed to stage bulletin {0} 3 times - skipping the bulletin now.", name);
+                                    }
                                     continue; // Go to the next bulletin
                                 }
                             }
@@ -131,10 +135,13 @@ namespace Symantec.CWoC {
                             } catch {
                                 if (j++ < 3) {
                                     goto retry_create_policy; // Retry ceiling not reach - let's do it again.
-                                } else {
-                                    // Retried 3 times - we quit and document the problem
-                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
-                                    Console.WriteLine("Failed to create policy for bulletin {0} 3 times - the bulletin is now excluded.", name);
+                                } else { // Retried 3 times - we quit and document the problem
+                                    if (config.ExcludeOnFail) {
+                                        DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
+                                        Console.WriteLine("Failed to create policy for bulletin {0} 3 times - the bulletin is now excluded.", name);
+                                    } else {
+                                        Console.WriteLine("Failed to create policy for bulletin {0} 3 times - skipping the bulletin now.", name);
+                                    }
                                     continue; // Go to the next bulletin
                                 }
                             }
