@@ -22,6 +22,7 @@ namespace Symantec.CWoC {
         private bool _CreateDuplicates;
         private string _Vendor_Name;
         private string _custom_sp;
+        private bool _ExcludeOnFail;
 
         // ZeroDayPatch config items
         private string _Target_Guid;
@@ -45,6 +46,7 @@ namespace Symantec.CWoC {
             _Test_Run = false;
             _locale = "EN";
             _CreateDuplicates = false;
+            _ExcludeOnFail = false;
 
             _type = type;
 
@@ -165,6 +167,14 @@ namespace Symantec.CWoC {
             }
             set {
                 _CreateDuplicates = value;
+            }
+        }
+        public bool ExcludeOnFail {
+            get {
+                return _ExcludeOnFail;
+            }
+            set {
+                _ExcludeOnFail = value;
             }
         }
 
