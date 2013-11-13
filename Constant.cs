@@ -6,7 +6,7 @@ namespace Symantec.CWoC
 {
     class Constant
     {
-        public const string VERSION = "8";
+        public const string VERSION = "9";
         public const string ZERODAY_SCHEMA_VERSION = "0003";
 
         #region SQL STRINGS
@@ -96,7 +96,12 @@ namespace Symantec.CWoC
         policies from a parent to a child SMP without disruption.
 
         Note! Duplicated and new entries will be added to the exclusion 
-        table in the database for safety reasons. 
+        table in the database for safety reasons.
+
+    /exclude-on-fail
+        Use this command to add bulletins to the excluded table if it fails
+        3 times during the stagging or policy creation phases. If not uses
+        the failing bulletin will only be skipped.
 
     /version
         Print out the current version of the tool.
