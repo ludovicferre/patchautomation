@@ -98,8 +98,20 @@ namespace Symantec.CWoC {
                     } else {
                         Console.WriteLine("PHASE 1: This bulletin will be stagged now.");
                         if (!config.Dry_Run) {
-                            EventLog.ReportInfo(String.Format("Bulletin {0} will be staged now.", bulletin_name));
-                            wfsvc.EnsureStaged(bulletin.ToString(), true);
+                            int j = 0; // retry counter
+                        retry_stagging:
+                            try {
+                                EventLog.ReportInfo(String.Format("Bulletin {0} will be staged now.", bulletin_name));
+                                wfsvc.EnsureStaged(bulletin.ToString(), true);
+                            } catch {
+                                if (j++ < 3) {
+                                    goto retry_stagging;
+                                } else {
+                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
+                                    EventLog.ReportError(String.Format("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", bulletin_name));
+                                    continue;
+                                }
+                            }
                         }
                     }
 
@@ -112,9 +124,21 @@ namespace Symantec.CWoC {
 
                         Console.WriteLine("PHASE 2: Creating policy {0} now.", policy_name);
                         if (!config.Dry_Run) {
-                            PatchAPI wrap = new PatchAPI();
-                            wrap.CreateUpdatePolicy(policy_name, bulletin.ToString(), config.Target_Guid_Test, true);
-                            EventLog.ReportInfo(String.Format("SoftwareUpdateAdvertisement policy {0} (targetguid={1}) was created.", policy_name, config.Target_Guid_Test));
+                            int k = 0; //retry counter
+                        retry_policy_creation:
+                            try {
+                                PatchAPI wrap = new PatchAPI();
+                                wrap.CreateUpdatePolicy(policy_name, bulletin.ToString(), config.Target_Guid_Test, true);
+                                EventLog.ReportInfo(String.Format("SoftwareUpdateAdvertisement policy {0} (targetguid={1}) was created.", policy_name, config.Target_Guid_Test));
+                            } catch {
+                                if (k++ < 3) {
+                                    goto retry_policy_creation;
+                                } else {
+                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
+                                    EventLog.ReportError(String.Format("Failed to create policy for bulletin {0} 3 times - the bulletin is now excluded.", bulletin_name));
+                                    continue;
+                                }
+                            }
                             if (config.Create_Duplicates) {
                                 DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
                             }
