@@ -105,6 +105,7 @@ namespace Symantec.CWoC {
                                 wfsvc.EnsureStaged(bulletin.ToString(), true);
                             } catch {
                                 if (j++ < 3) {
+                                    EventLog.ReportWarning(String.Format("Failed to stage bulletin {0} {1} times...", bulletin_name, j.ToString()));
                                     goto retry_stagging;
                                 } else {
                                     if (config.ExcludeOnFail) {
@@ -136,6 +137,7 @@ namespace Symantec.CWoC {
                                 EventLog.ReportInfo(String.Format("SoftwareUpdateAdvertisement policy {0} (targetguid={1}) was created.", policy_name, config.Target_Guid_Test));
                             } catch {
                                 if (k++ < 3) {
+                                    EventLog.ReportWarning(String.Format("Failed to create policy for bulletin {0} {1} times...", bulletin_name, k.ToString()));
                                     goto retry_policy_creation;
                                 } else { // Failed three times - skip or exclude based on CLI config
                                     if (config.ExcludeOnFail) {

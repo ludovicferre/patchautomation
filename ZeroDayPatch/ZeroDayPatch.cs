@@ -95,6 +95,7 @@ namespace Symantec.CWoC {
                                 wfsvc.EnsureStaged(bulletin.ToString(), true);
                             } catch {
                                 if (k++ < 3) {
+                                    Console.WriteLine("Failed to stage bulletin {0} {1} time(s)...", name, k.ToString());
                                     goto retry_staging;
                                 } else { // Retried 3 times - we quit and document the problem
                                     if (config.ExcludeOnFail) {
@@ -134,6 +135,7 @@ namespace Symantec.CWoC {
                                 i++;
                             } catch {
                                 if (j++ < 3) {
+                                    Console.WriteLine("\tFailed to create policy for bulletin {0} {1} time(s)...", name, j.ToString());
                                     goto retry_create_policy; // Retry ceiling not reach - let's do it again.
                                 } else { // Retried 3 times - we quit and document the problem
                                     if (config.ExcludeOnFail) {
