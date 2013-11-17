@@ -89,23 +89,17 @@ namespace Symantec.CWoC {
                     } else {
                         Console.WriteLine("\t... bulletin will be stagged now.");
                         if (!config.Dry_Run) {
-                            int k = 0; // Retry the stagging up to 3 times...
-                        retry_staging:
                             try {
                                 wfsvc.EnsureStaged(bulletin.ToString(), true);
                             } catch {
-                                if (k++ < 3) {
-                                    Console.WriteLine("Failed to stage bulletin {0} {1} time(s)...", name, k.ToString());
-                                    goto retry_staging;
-                                } else { // Retried 3 times - we quit and document the problem
-                                    if (config.ExcludeOnFail) {
-                                        DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
-                                        Console.WriteLine("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", name);
-                                    } else {
-                                        Console.WriteLine("Failed to stage bulletin {0} 3 times - skipping the bulletin now.", name);
-                                    }
-                                    continue; // Go to the next bulletin
+                                // Do not retry staging error. Any download error is retried at the task level. Other errors won't be solved by retry...
+                                if (config.ExcludeOnFail) {
+                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
+                                    Console.WriteLine("Failed to stage bulletin {0} - the bulletin is now excluded.", name);
+                                } else {
+                                    Console.WriteLine("Failed to stage bulletin {0} - skipping the bulletin now.", name);
                                 }
+                                continue; // Go to the next bulletin
                             }
                         }
                         Console.WriteLine("\tBulletin is now stagged.");

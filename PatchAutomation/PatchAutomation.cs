@@ -98,24 +98,18 @@ namespace Symantec.CWoC {
                     } else {
                         Console.WriteLine("PHASE 1: This bulletin will be stagged now.");
                         if (!config.Dry_Run) {
-                            int j = 0; // retry counter
-                        retry_stagging:
                             try {
                                 EventLog.ReportInfo(String.Format("Bulletin {0} will be staged now.", bulletin_name));
                                 wfsvc.EnsureStaged(bulletin.ToString(), true);
                             } catch {
-                                if (j++ < 3) {
-                                    EventLog.ReportWarning(String.Format("Failed to stage bulletin {0} {1} times...", bulletin_name, j.ToString()));
-                                    goto retry_stagging;
+                                // Do not retry staging error. Any download error is retried at the task level. Other errors won't be solved by retry...
+                                if (config.ExcludeOnFail) {
+                                    DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
+                                    EventLog.ReportError(String.Format("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", bulletin_name));
                                 } else {
-                                    if (config.ExcludeOnFail) {
-                                        DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + bulletin_name + "')");
-                                        EventLog.ReportError(String.Format("Failed to stage bulletin {0} 3 times - the bulletin is now excluded.", bulletin_name));
-                                    } else {
-                                        EventLog.ReportError(String.Format("Failed to stage bulletin {0} 3 times - skipping the bulletin now.", bulletin_name));
-                                    }
-                                    continue;
+                                    EventLog.ReportError(String.Format("Failed to stage bulletin {0} 3 times - skipping the bulletin now.", bulletin_name));
                                 }
+                                continue;
                             }
                         }
                     }
@@ -136,7 +130,7 @@ namespace Symantec.CWoC {
                                 wrap.CreateUpdatePolicy(policy_name, bulletin.ToString(), config.Target_Guid_Test, true);
                                 EventLog.ReportInfo(String.Format("SoftwareUpdateAdvertisement policy {0} (targetguid={1}) was created.", policy_name, config.Target_Guid_Test));
                             } catch {
-                                if (k++ < 3) {
+                                if (k++ < 3) { // Policy creation  is retried 3 times - as the most likely fail case i deadlock.
                                     EventLog.ReportWarning(String.Format("Failed to create policy for bulletin {0} {1} times...", bulletin_name, k.ToString()));
                                     goto retry_policy_creation;
                                 } else { // Failed three times - skip or exclude based on CLI config
