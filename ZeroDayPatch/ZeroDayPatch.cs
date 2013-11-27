@@ -143,6 +143,33 @@ namespace Symantec.CWoC {
                             }
                         }
                         Console.WriteLine("\tSoftware update policy created!");
+                    } else if (config.Retarget) {
+                        Console.WriteLine("\tA policy already exists for this bulletin. Checking if we should retarget now...");
+
+                        SoftwareUpdateAdvertismentSetPolicy policyItem = Item.GetItem<SoftwareUpdateAdvertismentSetPolicy>(policyGuid, ItemLoadFlags.Writeable);
+
+                        if (policyItem.ResourceTargets.Count == 1 && policyItem.ResourceTargets.ContainsKey(new Guid (config.Target_Guid))) {
+                            Console.WriteLine("Bulletin {0} policy is correctly targetted.", policyItem.Name);
+                            continue;
+                        }
+
+                        Console.WriteLine("Policy {0} will be retargetted now.", policyItem.Name);
+
+                        policyItem.ResourceTargets.Clear();
+                        policyItem.ResourceTargets.Add(new Guid(config.Target_Guid));
+                        if (!config.Dry_Run) {
+                            int retry = 0;
+                        save_item:
+                            try {
+                                policyItem.Save();
+                                i++;
+                            } catch {
+                                Console.WriteLine("Caught an exception. Retry " + retry.ToString() + "will start now.");
+                                if (retry < 10)
+                                    goto save_item;
+                                Console.WriteLine("Saving the policy failed 10 times. Moving on to the next item.");
+                            }
+                        }
                     } else {
                         Console.WriteLine("\tA policy already exists for this bulletin.");
                     }

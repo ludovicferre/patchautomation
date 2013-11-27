@@ -28,6 +28,7 @@ namespace Symantec.CWoC {
         private string _Target_Guid;
         private bool _Vulnerable;
         private bool _debug;
+        private bool _Retarget;
 
         // Patch Automation config items
         private string _locale;
@@ -54,6 +55,7 @@ namespace Symantec.CWoC {
                 _Target_Guid = "";
                 _Vulnerable = false;
                 _debug = false;
+                _Retarget = false;
             }
             if (_type == config_types.PatchAutomation) {
                 _span_t2v = 2;
@@ -178,6 +180,7 @@ namespace Symantec.CWoC {
             }
         }
 
+
         // ZeroDayPatch config items public accessors
         public string Target_Guid {
             get {
@@ -193,6 +196,14 @@ namespace Symantec.CWoC {
             }
             set {
                 _Vulnerable = value;
+            }
+        }
+        public bool Retarget {
+            set {
+                _Retarget = value;
+            }
+            get {
+                return _Retarget;
             }
         }
 

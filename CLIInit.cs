@@ -107,6 +107,9 @@ namespace Symantec.CWoC {
                     } else if (arg_l == "/exclude-on-fail") {
                         config.ExcludeOnFail = true;
                         ++valid_args;
+                    } else if (arg_l == "/retarget") {
+                        config.Retarget = true;
+                        ++valid_args;
                     }
                 }
             } catch {
