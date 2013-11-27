@@ -6,7 +6,7 @@ namespace Symantec.CWoC
 {
     class Constant
     {
-        public const string VERSION = "10";
+        public const string VERSION = "9";
         public const string ZERODAY_SCHEMA_VERSION = "0003";
 
         #region SQL STRINGS
@@ -103,6 +103,10 @@ namespace Symantec.CWoC
         3 times during the stagging or policy creation phases. If not uses
         the failing bulletin will only be skipped.
 
+    /retarget
+        Use this command if you want to switch existing policies to use a
+        new target. The target guid should be provided with /targetguid=...
+
     /version
         Print out the current version of the tool.
 
@@ -113,7 +117,7 @@ namespace Symantec.CWoC
 
         #region public const string ZERO_DAY_HELP
         public const string ZERO_DAY_HELP = @"
-ZeroDayPatch (version=" + VERSION + @") command line usage:
+ZeroDayPatch (version " + VERSION + @") command line usage:
 
     /vulnerable
             Use this command line switch to install and run a custom stored
@@ -130,7 +134,7 @@ ZeroDayPatch (version=" + VERSION + @") command line usage:
 
         #region public const string PATCH_AUTOMATE_HELP
         public const string PATCH_AUTOMATE_HELP = @"
-PatchAutomate (version=" + VERSION + @") command line usage:
+PatchAutomate (version " + VERSION + @") command line usage:
 
     /targetguid-test=<target_guid>
     /targetguid-validation=<target_guid>

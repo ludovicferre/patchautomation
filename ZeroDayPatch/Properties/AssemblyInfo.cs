@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("ZeroDayPatch")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Version 9")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("{CWoC}")]
 [assembly: AssemblyProduct("ZeroDayPatch")]
@@ -29,5 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("8.0.0.0")]
-[assembly: AssemblyFileVersion("8.0.0.0")]
+[assembly: AssemblyVersion("9.0.0.0")]
+[assembly: AssemblyFileVersion("9.0.0.0")]

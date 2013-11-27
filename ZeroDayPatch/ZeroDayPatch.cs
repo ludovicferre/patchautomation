@@ -106,10 +106,10 @@ namespace Symantec.CWoC {
                     }
                     Console.WriteLine("\tChecking if we need to create a new policy now.");
 
-                    string policyGuid = "";
-                    policyGuid = wfsvc.ResolveToPolicies(bulletin.ToString());
+                    string policies_str = wfsvc.ResolveToPolicies(bulletin.ToString());
+                    string[] policies_arr = policies_str.Split(',');
 
-                    if (policyGuid == "" || policyGuid.Length == 0 || config.Create_Duplicates) {
+                    if (policies_str == "" || policies_str.Length == 0 || config.Create_Duplicates) {
                         Console.WriteLine("\t... create a policy for the bulletin now.");
                         if (!config.Dry_Run) {
                             int j = 0; // Used for retry count
@@ -134,9 +134,9 @@ namespace Symantec.CWoC {
                                 } else { // Retried 3 times - we quit and document the problem
                                     if (config.ExcludeOnFail) {
                                         DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
-                                        Console.WriteLine("Failed to create policy for bulletin {0} 3 times - the bulletin is now excluded.", name);
+                                        Console.WriteLine("\tFailed to create policy for bulletin {0} 3 times - the bulletin is now excluded.", name);
                                     } else {
-                                        Console.WriteLine("Failed to create policy for bulletin {0} 3 times - skipping the bulletin now.", name);
+                                        Console.WriteLine("\tFailed to create policy for bulletin {0} 3 times - skipping the bulletin now.", name);
                                     }
                                     continue; // Go to the next bulletin
                                 }
@@ -144,40 +144,48 @@ namespace Symantec.CWoC {
                         }
                         Console.WriteLine("\tSoftware update policy created!");
                     } else if (config.Retarget) {
-                        Console.WriteLine("\tA policy already exists for this bulletin. Checking if we should retarget now...");
+                        if (policies_arr.Length > 0) {
+                            foreach (string p in policies_arr) {
+                                if (p.Length != 36)
+                                    continue;
 
-                        SoftwareUpdateAdvertismentSetPolicy policyItem = Item.GetItem<SoftwareUpdateAdvertismentSetPolicy>(policyGuid, ItemLoadFlags.Writeable);
+                                Console.WriteLine("\tA policy already exists for this bulletin...");
 
-                        if (policyItem.ResourceTargets.Count == 1 && policyItem.ResourceTargets.ContainsKey(new Guid (config.Target_Guid))) {
-                            Console.WriteLine("Bulletin {0} policy is correctly targetted.", policyItem.Name);
-                            continue;
-                        }
+                                Guid policyGuid = new Guid(p);
+                                SoftwareUpdateAdvertismentSetPolicy policyItem = Item.GetItem<SoftwareUpdateAdvertismentSetPolicy>(policyGuid, ItemLoadFlags.Writeable);
 
-                        Console.WriteLine("Policy {0} will be retargetted now.", policyItem.Name);
+                                if (policyItem.ResourceTargets.Count == 1 && policyItem.ResourceTargets.ContainsKey(new Guid(config.Target_Guid))) {
+                                    Console.WriteLine("\tBulletin {0} policy is correctly targetted.", policyItem.Name);
+                                    continue;
+                                }
 
-                        policyItem.ResourceTargets.Clear();
-                        policyItem.ResourceTargets.Add(new Guid(config.Target_Guid));
-                        if (!config.Dry_Run) {
-                            int retry = 0;
-                        save_item:
-                            try {
-                                policyItem.Save();
-                                i++;
-                            } catch {
-                                Console.WriteLine("Caught an exception. Retry " + retry.ToString() + "will start now.");
-                                if (retry < 10)
-                                    goto save_item;
-                                Console.WriteLine("Saving the policy failed 10 times. Moving on to the next item.");
+                                Console.WriteLine("\tPolicy {0} will be retargetted now.", policyItem.Name);
+
+                                policyItem.ResourceTargets.Clear();
+                                policyItem.ResourceTargets.Add(new Guid(config.Target_Guid));
+                                if (!config.Dry_Run) {
+                                    int retry = 0;
+                                save_item:
+                                    try {
+                                        policyItem.Save();
+                                        i++;
+                                    } catch {
+                                        Console.WriteLine("\tCaught an exception. Retry " + retry.ToString() + "will start now.");
+                                        if (retry < 10)
+                                            goto save_item;
+                                        Console.WriteLine("\tSaving the policy failed 10 times. Moving on to the next item.");
+                                    }
+                                }
                             }
                         }
                     } else {
                         Console.WriteLine("\tA policy already exists for this bulletin.");
-                    }
-                    if (i > 10 && config.Test_Run)
+                        }
+                    if (i > 9 && config.Test_Run)
                         break;
                 }
             } catch (Exception e) {
-                Console.WriteLine("Error message={0}z\nInner Exception={1}\nStacktrace={2}", e.Message, e.InnerException, e.StackTrace);
+                Console.WriteLine("Error message={0}\nInner Exception={1}\nStacktrace={2}", e.Message, e.InnerException, e.StackTrace);
                 return -1;
             }
             return i;
