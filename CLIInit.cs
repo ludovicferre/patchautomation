@@ -110,6 +110,9 @@ namespace Symantec.CWoC {
                     } else if (arg_l == "/retarget") {
                         config.Retarget = true;
                         ++valid_args;
+                    } else if (arg_l == "/recreate-missing-policies" || arg_l == "/recreate") {
+                        config.RecreateMissingPolicies = true;
+                        ++valid_args;
                     }
                 }
             } catch {

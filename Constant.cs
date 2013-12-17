@@ -6,7 +6,7 @@ namespace Symantec.CWoC
 {
     class Constant
     {
-        public const string VERSION = "9";
+        public const string VERSION = "9b";
         public const string ZERODAY_SCHEMA_VERSION = "0003";
 
         #region SQL STRINGS

@@ -23,6 +23,7 @@ namespace Symantec.CWoC {
         private string _Vendor_Name;
         private string _custom_sp;
         private bool _ExcludeOnFail;
+        private bool _RecreateMissingPolicies;
 
         // ZeroDayPatch config items
         private string _Target_Guid;
@@ -48,6 +49,7 @@ namespace Symantec.CWoC {
             _locale = "EN";
             _CreateDuplicates = false;
             _ExcludeOnFail = false;
+            _RecreateMissingPolicies = false;
 
             _type = type;
 
@@ -177,6 +179,14 @@ namespace Symantec.CWoC {
             }
             set {
                 _ExcludeOnFail = value;
+            }
+        }
+        public bool RecreateMissingPolicies {
+            get {
+                return _RecreateMissingPolicies;
+            }
+            set {
+                _RecreateMissingPolicies = value;
             }
         }
 
