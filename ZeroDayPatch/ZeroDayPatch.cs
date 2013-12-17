@@ -108,7 +108,7 @@ namespace Symantec.CWoC {
                         if (!config.Dry_Run) {
                             try {
                                 wfsvc.EnsureStaged(bulletin.ToString(), true);
-                                LogOp(String.Format("{0}: Stagged bulletin {1} (guid={2}).", DateTime.Now.ToLongTimeString(), name, bulletin.ToString()));
+                                LogOp(String.Format("{0}: Stagged bulletin {1} (guid={2}).", DateTime.Now.ToString(), name, bulletin.ToString()));
                             } catch {
                                 // Do not retry staging error. Any download error is retried at the task level. Other errors won't be solved by retry...
                                 if (config.ExcludeOnFail) {
@@ -136,11 +136,11 @@ namespace Symantec.CWoC {
                                 if (config.Target_Guid == "") {
                                     PatchAPI wrap = new PatchAPI();
                                     wrap.CreateUpdatePolicy(name, bulletin.ToString(), true);
-                                    LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2})", DateTime.Now.ToLongTimeString(), name, bulletin.ToString()));
+                                    LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2})", DateTime.Now.ToString(), name, bulletin.ToString()));
                                 } else {
                                     PatchAPI wrap = new PatchAPI();
                                     wrap.CreateUpdatePolicy(name, bulletin.ToString(), config.Target_Guid, true);
-                                    LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2}, target={3})", DateTime.Now.ToLongTimeString(), name, bulletin.ToString(), config.Target_Guid));
+                                    LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2}, target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Target_Guid));
                                 }
                                 // Added the bulletin to the exclusion list here
                                 if (config.Create_Duplicates) {
@@ -188,7 +188,7 @@ namespace Symantec.CWoC {
                                 save_item:
                                     try {
                                         policyItem.Save();
-                                        LogOp(String.Format("{0}: Retargetted policy for bulletin {1} (guid={2}, new target={3})", DateTime.Now.ToLongTimeString(), name, bulletin.ToString(), config.Target_Guid));
+                                        LogOp(String.Format("{0}: Retargetted policy for bulletin {1} (guid={2}, new target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Target_Guid));
                                         i++;
                                     } catch {
                                         Console.WriteLine("\tCaught an exception. Retry " + retry.ToString() + "will start now.");
