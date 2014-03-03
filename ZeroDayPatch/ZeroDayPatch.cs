@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Data;
 using System.Data.SqlClient;
@@ -20,6 +21,8 @@ using Symantec.CWoC.APIWrappers;
 namespace Symantec.CWoC {
     class ZeroDayPatch {
         private CliConfig config;
+
+        private string operation_log;
 
         static int Main(string[] args) {
             if (SecurityAPI.is_user_admin()) {
@@ -67,8 +70,18 @@ namespace Symantec.CWoC {
             return -1;
         }
 
+        private void LogOp(string entry) {
+            using (StreamWriter sr = File.AppendText(operation_log)) {
+                sr.WriteLine(entry);
+                sr.Close();
+            }
+        }
+
         private int RunAutomation(GuidCollection bulletins) {
             Console.Write("\n\n");
+            string now = DateTime.Now.ToString("yyyyMMddHHmmss");
+            
+            operation_log = "journal_" + now.ToString() + ".log";
 
             int i = 0;
             try {
@@ -87,10 +100,15 @@ namespace Symantec.CWoC {
                     if (wfsvc.IsStaged(bulletin.ToString())) {
                         Console.WriteLine("\tThis bulletin is already staged.");
                     } else {
+                        if (config.RecreateMissingPolicies || config.Retarget) {
+                            // Skip this bulletin as it is not yet downloaded
+                            continue;
+                        }
                         Console.WriteLine("\t... bulletin will be stagged now.");
                         if (!config.Dry_Run) {
                             try {
                                 wfsvc.EnsureStaged(bulletin.ToString(), true);
+                                LogOp(String.Format("{0}: Stagged bulletin {1} (guid={2}).", DateTime.Now.ToString(), name, bulletin.ToString()));
                             } catch {
                                 // Do not retry staging error. Any download error is retried at the task level. Other errors won't be solved by retry...
                                 if (config.ExcludeOnFail) {
@@ -109,7 +127,7 @@ namespace Symantec.CWoC {
                     string policies_str = wfsvc.ResolveToPolicies(bulletin.ToString());
                     string[] policies_arr = policies_str.Split(',');
 
-                    if (policies_str == "" || policies_str.Length == 0 || config.Create_Duplicates) {
+                    if ( !config.Retarget && (policies_str == "" || policies_str.Length == 0 || config.Create_Duplicates)) {
                         Console.WriteLine("\t... create a policy for the bulletin now.");
                         if (!config.Dry_Run) {
                             int j = 0; // Used for retry count
@@ -118,9 +136,11 @@ namespace Symantec.CWoC {
                                 if (config.Target_Guid == "") {
                                     PatchAPI wrap = new PatchAPI();
                                     wrap.CreateUpdatePolicy(name, bulletin.ToString(), true);
+                                    LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2})", DateTime.Now.ToString(), name, bulletin.ToString()));
                                 } else {
                                     PatchAPI wrap = new PatchAPI();
                                     wrap.CreateUpdatePolicy(name, bulletin.ToString(), config.Target_Guid, true);
+                                    LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2}, target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Target_Guid));
                                 }
                                 // Added the bulletin to the exclusion list here
                                 if (config.Create_Duplicates) {
@@ -168,6 +188,7 @@ namespace Symantec.CWoC {
                                 save_item:
                                     try {
                                         policyItem.Save();
+                                        LogOp(String.Format("{0}: Retargetted policy for bulletin {1} (guid={2}, new target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Target_Guid));
                                         i++;
                                     } catch {
                                         Console.WriteLine("\tCaught an exception. Retry " + retry.ToString() + "will start now.");
