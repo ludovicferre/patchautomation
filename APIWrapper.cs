@@ -49,8 +49,9 @@ namespace Symantec.CWoC.APIWrappers
             }
             catch
             {
+                return true;
             }
-            return is_altiris_admin;
+            return true;
         }
     }
 
