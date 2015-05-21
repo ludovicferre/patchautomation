@@ -131,10 +131,10 @@ ZeroDayPatch (version " + VERSION + @") command line usage:
             created policies. This will over-write the default target defined
             globally.
 			
-			Note that you can specify more than 1 target guid. Just add more
-			/targetguid=<target_guid> to you command line or config file. This
-			is most useful if you are delegating computer targetting to other
-			team (such as server , workstation administrators).
+            Note that you can specify more than 1 target guid. Just add more
+            /targetguid=<target_guid> to you command line or config file. This
+            is most useful if you are delegating computer targetting to other
+            team (such as server , workstation administrators).
 
 " + COMMON_FEATURES;
         #endregion
