@@ -107,7 +107,6 @@ namespace Symantec.CWoC.APIWrappers {
 				return ArrayOps.Join(guids2.RemoveDuplicates(), ",");
 		}
 
-		
 		public GuidCollection ParseGuidList(string list, bool unique) {
 				GuidCollection guids = new GuidCollection();
 				foreach (string str in list.Split(new char[] { ',', ';', '|' })) {
@@ -156,6 +155,47 @@ namespace Symantec.CWoC.APIWrappers {
                 GuidCollection targetGuidColl = new GuidCollection();
                 Guid g = new Guid(targetGuid);
                 targetGuidColl.Add(g);
+
+                newAdvertismentSet.BaseResourceTargetGuids = targetGuidColl;
+            }
+            ITaskExecutionInstance instance = task.CreateInstance(newAdvertismentSet, Guid.Empty, DistributionType.PolicyForWin);
+            if (instance == null) {
+                return string.Empty;
+            }
+            return instance.TaskInstanceGuid.Guid.ToString();
+        }
+    }
+
+        public string CreateUpdatePolicy(string name, string bulletinGuids, List<string> targetGuids, bool enabled) {
+            
+            GuidCollection suGuids = ParseGuidList(ResolveToUpdates(bulletinGuids), true);
+            if (suGuids == null) {
+                return string.Empty;
+            }
+            if (suGuids.Count == 0) {
+                return "No software updates resolved for policy.";
+            }
+            Guid platformPolicy = PatchManagementVendorPolicy.GetPlatformPolicy(suGuids[0]);
+            if (platformPolicy == Guid.Empty) {
+                return string.Format("Unable to resolve vendor from {0}", suGuids[0]);
+            }
+            PatchManagementVendorPolicy item = Item.GetItem(platformPolicy) as PatchManagementVendorPolicy;
+            if (item == null) {
+                return string.Format("Unable to load vendor policy {0}", platformPolicy);
+            }
+            SoftwareUpdateAdvertismentSet newAdvertismentSet = item.GetNewAdvertismentSet();
+            newAdvertismentSet.Initialise(suGuids);
+            SoftwareUpdateDistributionTask task = Item.GetItem(Tasks.Singletons70.SoftwareUpdateDistrbutionTask, ItemLoadFlags.WriteableIgnoreAll) as SoftwareUpdateDistributionTask;
+            if (task == null) {
+                return "Cannot initialise of SoftwareUpdateDistrbutionTask. Item is missing from the database";
+            }
+            newAdvertismentSet.Name = name;
+            newAdvertismentSet.Enabled = enabled;
+
+            if (targetGuids.Count > 0) {
+                GuidCollection targetGuidColl = new GuidCollection();
+				foreach (string target in targetGuids)
+					targetGuidColl.Add(new Guid(target));
 
                 newAdvertismentSet.BaseResourceTargetGuids = targetGuidColl;
             }
