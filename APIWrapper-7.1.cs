@@ -164,7 +164,6 @@ namespace Symantec.CWoC.APIWrappers {
             }
             return instance.TaskInstanceGuid.Guid.ToString();
         }
-    }
 
         public string CreateUpdatePolicy(string name, string bulletinGuids, List<string> targetGuids, bool enabled) {
             
