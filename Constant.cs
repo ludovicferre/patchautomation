@@ -6,7 +6,7 @@ namespace Symantec.CWoC
 {
     class Constant
     {
-        public const string VERSION = "10";
+        public const string VERSION = "11";
         public const string ZERODAY_SCHEMA_VERSION = "0003";
 
         #region SQL STRINGS
@@ -130,6 +130,11 @@ ZeroDayPatch (version " + VERSION + @") command line usage:
             Use this option to set the target guid to be used with newly 
             created policies. This will over-write the default target defined
             globally.
+			
+			Note that you can specify more than 1 target guid. Just add more
+			/targetguid=<target_guid> to you command line or config file. This
+			is most useful if you are delegating computer targetting to other
+			team (such as server , workstation administrators).
 
 " + COMMON_FEATURES;
         #endregion
