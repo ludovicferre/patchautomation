@@ -6,11 +6,13 @@ namespace Symantec.CWoC
 {
     class Constant
     {
-        public const string VERSION = "9b";
+        public const string VERSION = "10";
         public const string ZERODAY_SCHEMA_VERSION = "0003";
 
         #region SQL STRINGS
         public const string PATCH_EXCLUSION_QUERY = @"if exists (select 1 from sys.objects where name = 'patchautomation_excluded') select bulletin from patchautomation_excluded";
+
+        public const string PATCH_EXCLUSION_LIST = @"if exists (select 1 from sys.objects where name = 'patchautomation_excluded') select bulletin, createddate from patchautomation_excluded order by createddate desc";
 
         public const string PATCH_EXCLUSION_CREATION = @"
             IF NOT EXISTS(select 1 from sys.objects where type ='U' and name = 'PatchAutomation_Excluded')
@@ -18,14 +20,14 @@ namespace Symantec.CWoC
             CREATE TABLE [PatchAutomation_Excluded](
 	            [_id] [int] IDENTITY(1,1) NOT NULL,
 	            [Bulletin] [nvarchar](255) NOT NULL,
-	            [CreateDate] [datetime] NULL,
+	            [CreatedDate] [datetime] NULL,
              CONSTRAINT [pk_PatchAutomation_Excluded] PRIMARY KEY CLUSTERED
             (
 	            [Bulletin] ASC
             )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
             ) ON [PRIMARY]
 
-            ALTER TABLE [PatchAutomation_Excluded] ADD  DEFAULT (getdate()) FOR [CreateDate]
+            ALTER TABLE [PatchAutomation_Excluded] ADD  DEFAULT (getdate()) FOR [CreatedDate]
             END
             ";
         #endregion
@@ -134,7 +136,7 @@ ZeroDayPatch (version " + VERSION + @") command line usage:
 
         #region public const string PATCH_AUTOMATE_HELP
         public const string PATCH_AUTOMATE_HELP = @"
-PatchAutomate (version " + VERSION + @") command line usage:
+PatchAutomation (version " + VERSION + @") command line usage:
 
     /targetguid-test=<target_guid>
     /targetguid-validation=<target_guid>
@@ -160,6 +162,46 @@ PatchAutomate (version " + VERSION + @") command line usage:
 " + COMMON_FEATURES;
         #endregion
 
+		#region public const string PATCH_EXCLUSION_HELP
+		public static string PATCH_EXCLUSION_HELP = @"
+PatchExclusion (version " + VERSION  + @"):
+
+Background:
+        ZeroDayPatch and PatchAutomation both have the ability to exclude 
+        bulletins from the bulletin working set retrieved from the SMP. This 
+        tool will allow you to verify if any bulletins are excluded or to add
+        or remove entries from the exclusions when and as needed.
+
+        The excluded entries are stored in the table patchautomation_exclusion
+        which has 3 fields: Id (int), Bulletin (nvarchar(255)) and CreatedDate
+        (timestamp).
+
+Supported commands:
+
+    ls | list
+        Print out the content of the exclusion table to the console.
+
+    ++ | add <bulletin list>
+        Add bulletins provided in the <bulletin list> to the exclusion table.
+
+    -- | del <bulletin list>
+        Delete bulletins provided in the <bulletin list> from the exclusion table.
+
+    reset
+        Delete all entries from the exclusion table.
+		
+    forceinit
+        Delete the exclusion table 
+
+    version
+        Print out the current version of the tool.
+
+    help | /?
+        Display this help message.
+
+";
+		#endregion
+		
         #region public const string ZERODAY_GET_VULNERABLE
         public const string ZERODAY_GET_VULNERABLE = @"
 -- ============================================================================

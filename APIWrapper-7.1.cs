@@ -54,12 +54,14 @@ namespace Symantec.CWoC.APIWrappers {
 
     class PatchAPI {
 		public bool IsStaged(string bulletinGuids) {
-				bool flag;
-				GuidCollection nonstagedUpdates = SoftwareUpdateAdvertismentSetPolicy.GetNonstagedUpdates(ParseGuidList(ResolveToUpdates(bulletinGuids), true));
-				flag = (nonstagedUpdates == null) || (nonstagedUpdates.Count == 0);
-				return flag;
+				GuidCollection nonstagedUpdates = SoftwareUpdateAdvertismentSetPolicy.GetNonstagedUpdates(ParseGuidList(ResolveToUpdates(bulletinGuids), true), true);
+				if (nonstagedUpdates != null) {
+					return (nonstagedUpdates.Count == 0);
+				}
+				return true;
 		}
 
+		
 		public string ResolveToUpdates(string bulletinGuids) {
 			string str;
 			GuidCollection guids = ParseGuidList(bulletinGuids, true);
@@ -92,27 +94,19 @@ namespace Symantec.CWoC.APIWrappers {
 		}
 
 		public string ResolveToPolicies(string bulletinGuids) {
-				string str;
 				GuidCollection guids = ParseGuidList(ResolveToUpdates(bulletinGuids), true);
-				if (guids != null) {
-						GuidCollection guids2 = new GuidCollection();
-						using (IEnumerator<Guid> enumerator = guids.GetEnumerator()) {
-								while (enumerator.MoveNext()) {
-										Func<TypedRecordset<ItemReferenceRow>> func = null;
-										Guid guid = enumerator.Current;
-										if (func == null) {
-												func = () => Altiris.NS.DataAccessLayer.DataAccessLayer<PatchManagementCorePoliciesDAL>.Instance.spPMCore_GetItemReference(Guid.Empty, guid, "policy_swu");
-										}
-										foreach (ItemReferenceRow row in PMDal.PerformWithDlr<TypedRecordset<ItemReferenceRow>>(func)) {
-												guids2.Add(row.ParentItemGuid);
-										}
-								}
-						}
-						return ArrayOps.Join((IEnumerable<Guid>) guids2.RemoveDuplicates(), ",");
+				if (guids == null) {
+					return string.Empty;
 				}
-				str = string.Empty;
-				return str;
+				GuidCollection guids2 = new GuidCollection();
+				foreach (Guid guid in guids) {
+					foreach (ItemReferenceRow row in Altiris.NS.DataAccessLayer.DataAccessLayer<PatchManagementCorePoliciesDAL>.Instance.spPMCore_GetItemReference(Guid.Empty, guid, "policy_swu")) {
+						guids2.Add(row.ParentItemGuid);
+					}
+				}
+				return ArrayOps.Join(guids2.RemoveDuplicates(), ",");
 		}
+
 		
 		public GuidCollection ParseGuidList(string list, bool unique) {
 				GuidCollection guids = new GuidCollection();
@@ -219,7 +213,7 @@ namespace Symantec.CWoC.APIWrappers {
                     return Convert.ToInt32(result);
                 }
             } catch (Exception e) {
-                Console.WriteLine("Error: {0}\nException message = {1}\nStack trace = {2}.", e.Message, e.InnerException, e.StackTrace);
+                LoggingAPI.ReportException(e);
                 throw new Exception("Failed to execute scalar SQL command...");
             }
         }
@@ -228,7 +222,6 @@ namespace Symantec.CWoC.APIWrappers {
     class LoggingAPI {
         public static void ReportException(Exception e) {
             string msg = string.Format("Caught exception {0}\nInnerException={1}\nStackTrace={2}", e.Message, e.InnerException, e.StackTrace);
-            Console.WriteLine(msg);
             EventLog.ReportError(msg);
         }
 

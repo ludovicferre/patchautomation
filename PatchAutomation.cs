@@ -11,10 +11,8 @@ using Altiris.Resource;
 using Altiris.NS.ItemManagement;
 using Altiris.NS.ContextManagement;
 using Altiris.NS.Security;
-using Altiris.PatchManagementCore.Web;
 using Altiris.PatchManagementCore.Policies;
 
-using Symantec.CWoC;
 using Symantec.CWoC.APIWrappers;
 
 namespace Symantec.CWoC {
@@ -85,7 +83,7 @@ namespace Symantec.CWoC {
                 bulletins = GetSoftwareBulletins();
 
                 SecurityContextManager.SetContextData();
-                PatchWorkflowSvc wfsvc = new PatchWorkflowSvc();
+                PatchAPI wrap = new PatchAPI();
 
                 if (config.Dry_Run)
                     Console.WriteLine("\n######## THIS IS A DRY RUN ########");
@@ -93,14 +91,14 @@ namespace Symantec.CWoC {
                 foreach (Guid bulletin in bulletins) {
                     string bulletin_name = Item.GetItem(bulletin).Name;
                     Console.WriteLine("\n### BEGIN {0}, {1}", bulletin_name, bulletin);
-                    if (wfsvc.IsStaged(bulletin.ToString())) {
+                    if (wrap.IsStaged(bulletin.ToString())) {
                         Console.WriteLine("PHASE 1: This bulletin is already staged.");
                     } else {
                         Console.WriteLine("PHASE 1: This bulletin will be stagged now.");
                         if (!config.Dry_Run) {
                             try {
                                 EventLog.ReportInfo(String.Format("Bulletin {0} will be staged now.", bulletin_name));
-                                wfsvc.EnsureStaged(bulletin.ToString(), true);
+                                wrap.EnsureStaged(bulletin.ToString(), true);
                             } catch {
                                 // Do not retry staging error. Any download error is retried at the task level. Other errors won't be solved by retry...
                                 if (config.ExcludeOnFail) {
@@ -115,7 +113,7 @@ namespace Symantec.CWoC {
                     }
 
                     string policyGuids = "";
-                    policyGuids = wfsvc.ResolveToPolicies(bulletin.ToString());
+                    policyGuids = wrap.ResolveToPolicies(bulletin.ToString());
 
                     if (policyGuids == "" || policyGuids.Length == 0 || config.Create_Duplicates) {
                         string date = DateTime.Today.ToString("yyyy-MM-dd");
@@ -126,7 +124,6 @@ namespace Symantec.CWoC {
                             int k = 0; //retry counter
                         retry_policy_creation:
                             try {
-                                PatchAPI wrap = new PatchAPI();
                                 wrap.CreateUpdatePolicy(policy_name, bulletin.ToString(), config.Target_Guid_Test, true);
                                 EventLog.ReportInfo(String.Format("SoftwareUpdateAdvertisement policy {0} (targetguid={1}) was created.", policy_name, config.Target_Guid_Test));
                             } catch {

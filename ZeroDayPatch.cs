@@ -13,7 +13,6 @@ using Altiris.NS.ItemManagement;
 using Altiris.NS.ContextManagement;
 using Altiris.NS.Security;
 using Altiris.Common;
-using Altiris.PatchManagementCore.Web;
 using Altiris.PatchManagementCore.Policies;
 using Symantec.CWoC.APIWrappers;
 
@@ -53,9 +52,9 @@ namespace Symantec.CWoC {
                 }
                 #endregion
                 #region else display the help message
- else {
+				else {
                     if (automate.config.Print_Version) {
-                        Console.WriteLine("{{CWoC}} PatchAutomation version {0}", Constant.VERSION);
+                        Console.WriteLine("{{CWoC}} ZeroDayPatch version {0}", Constant.VERSION);
                         return 0;
                     }
                     Console.WriteLine(Constant.ZERO_DAY_HELP);
@@ -86,7 +85,7 @@ namespace Symantec.CWoC {
             int i = 0;
             try {
                 SecurityContextManager.SetContextData();
-                PatchWorkflowSvc wfsvc = new PatchWorkflowSvc();
+                PatchAPI wrap = new PatchAPI();
 
                 string name = "";
 
@@ -97,7 +96,7 @@ namespace Symantec.CWoC {
                     Console.WriteLine("");
                     Console.WriteLine("Processing bulletin {0} ({1}) now.", name, bulletin);
 
-                    if (wfsvc.IsStaged(bulletin.ToString())) {
+                    if (wrap.IsStaged(bulletin.ToString())) {
                         Console.WriteLine("\tThis bulletin is already staged.");
                     } else {
                         if (config.RecreateMissingPolicies || config.Retarget) {
@@ -107,7 +106,7 @@ namespace Symantec.CWoC {
                         Console.WriteLine("\t... bulletin will be stagged now.");
                         if (!config.Dry_Run) {
                             try {
-                                wfsvc.EnsureStaged(bulletin.ToString(), true);
+                                wrap.EnsureStaged(bulletin.ToString(), true);
                                 LogOp(String.Format("{0}: Stagged bulletin {1} (guid={2}).", DateTime.Now.ToString(), name, bulletin.ToString()));
                             } catch {
                                 // Do not retry staging error. Any download error is retried at the task level. Other errors won't be solved by retry...
@@ -124,7 +123,7 @@ namespace Symantec.CWoC {
                     }
                     Console.WriteLine("\tChecking if we need to create a new policy now.");
 
-                    string policies_str = wfsvc.ResolveToPolicies(bulletin.ToString());
+                    string policies_str = wrap.ResolveToPolicies(bulletin.ToString());
                     string[] policies_arr = policies_str.Split(',');
 
                     if ( !config.Retarget && (policies_str == "" || policies_str.Length == 0 || config.Create_Duplicates)) {
@@ -134,11 +133,9 @@ namespace Symantec.CWoC {
                         retry_create_policy:
                             try {
                                 if (config.Target_Guid == "") {
-                                    PatchAPI wrap = new PatchAPI();
                                     wrap.CreateUpdatePolicy(name, bulletin.ToString(), true);
                                     LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2})", DateTime.Now.ToString(), name, bulletin.ToString()));
                                 } else {
-                                    PatchAPI wrap = new PatchAPI();
                                     wrap.CreateUpdatePolicy(name, bulletin.ToString(), config.Target_Guid, true);
                                     LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2}, target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Target_Guid));
                                 }
@@ -147,8 +144,10 @@ namespace Symantec.CWoC {
                                     DatabaseAPI.ExecuteNonQuery("insert patchautomation_excluded (bulletin) values ('" + name + "')");
                                 }
                                 i++;
-                            } catch {
+                            } catch (Exception e){
                                 if (j++ < 3) {
+									Console.WriteLine(e.Message);
+									Console.WriteLine(e.StackTrace);
                                     Console.WriteLine("\tFailed to create policy for bulletin {0} {1} time(s)...", name, j.ToString());
                                     goto retry_create_policy; // Retry ceiling not reach - let's do it again.
                                 } else { // Retried 3 times - we quit and document the problem
