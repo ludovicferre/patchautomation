@@ -132,12 +132,12 @@ namespace Symantec.CWoC {
                             int j = 0; // Used for retry count
                         retry_create_policy:
                             try {
-                                if (config.Target_Guid == "") {
+                                if (config.Target_Guids.Count == 0) {
                                     wrap.CreateUpdatePolicy(name, bulletin.ToString(), true);
                                     LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2})", DateTime.Now.ToString(), name, bulletin.ToString()));
                                 } else {
-                                    wrap.CreateUpdatePolicy(name, bulletin.ToString(), config.Target_Guid, true);
-                                    LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2}, target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Target_Guid));
+                                    wrap.CreateUpdatePolicy(name, bulletin.ToString(), config.Target_Guids, true);
+                                    LogOp(String.Format("{0}: Created policy for bulletin {1} (guid={2}, target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Get_TargetGuids()));
                                 }
                                 // Added the bulletin to the exclusion list here
                                 if (config.Create_Duplicates) {
@@ -173,21 +173,18 @@ namespace Symantec.CWoC {
                                 Guid policyGuid = new Guid(p);
                                 SoftwareUpdateAdvertismentSetPolicy policyItem = Item.GetItem<SoftwareUpdateAdvertismentSetPolicy>(policyGuid, ItemLoadFlags.Writeable);
 
-                                if (policyItem.ResourceTargets.Count == 1 && policyItem.ResourceTargets.ContainsKey(new Guid(config.Target_Guid))) {
-                                    Console.WriteLine("\tBulletin {0} policy is correctly targetted.", policyItem.Name);
-                                    continue;
-                                }
-
                                 Console.WriteLine("\tPolicy {0} will be retargetted now.", policyItem.Name);
 
                                 policyItem.ResourceTargets.Clear();
-                                policyItem.ResourceTargets.Add(new Guid(config.Target_Guid));
+								foreach (string target in config.Target_Guids) {
+									policyItem.ResourceTargets.Add(new Guid(target));
+								}
                                 if (!config.Dry_Run) {
                                     int retry = 0;
                                 save_item:
                                     try {
                                         policyItem.Save();
-                                        LogOp(String.Format("{0}: Retargetted policy for bulletin {1} (guid={2}, new target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Target_Guid));
+                                        LogOp(String.Format("{0}: Retargetted policy for bulletin {1} (guid={2}, new target={3})", DateTime.Now.ToString(), name, bulletin.ToString(), config.Get_TargetGuids()));
                                         i++;
                                     } catch {
                                         Console.WriteLine("\tCaught an exception. Retry " + retry.ToString() + "will start now.");

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Symantec.CWoC {
     public enum config_types {
@@ -26,7 +27,7 @@ namespace Symantec.CWoC {
         private bool _RecreateMissingPolicies;
 
         // ZeroDayPatch config items
-        private string _Target_Guid;
+        private List<string> _Target_Guids;
         private bool _Vulnerable;
         private bool _debug;
         private bool _Retarget;
@@ -54,7 +55,7 @@ namespace Symantec.CWoC {
             _type = type;
 
             if (_type == config_types.ZeroDayPatch) {
-                _Target_Guid = "";
+                _Target_Guids = new List<string>();
                 _Vulnerable = false;
                 _debug = false;
                 _Retarget = false;
@@ -192,14 +193,28 @@ namespace Symantec.CWoC {
 
 
         // ZeroDayPatch config items public accessors
-        public string Target_Guid {
+        public List<string> Target_Guids {
             get {
-                return _Target_Guid;
-            }
-            set {
-                _Target_Guid = value;
+                return _Target_Guids;
             }
         }
+		
+		public void Add_TargetGuid(string targetguid) {
+			_Target_Guids.Add(targetguid);
+		}
+		
+		public void Reset_TargetGuids() {
+			_Target_Guids.Clear();
+		}
+		
+		public string Get_TargetGuids() {
+			string targets = "";
+			foreach(string target in _Target_Guids) {
+				targets += target + ";";
+			}
+			return targets;
+		}
+		
         public bool Vulnerable {
             get {
                 return _Vulnerable;

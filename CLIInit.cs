@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.IO;
+using System.Collections.Generic;
 
 
 namespace Symantec.CWoC {
@@ -30,7 +31,7 @@ namespace Symantec.CWoC {
 
             config.Released_Before = DateTime.Now;
             config.Released_After = DateTime.Now.AddYears(-10);
-            config.Target_Guid = "";
+//            config.Target_Guid = new List<string>();
             config.Target_Guid_Test = "";
             config.Target_Guid_Validation = "";
             config.Target_Guid_Production = "";
@@ -46,7 +47,7 @@ namespace Symantec.CWoC {
                 foreach (string arg in cli_args) {
                     arg_l = arg.ToLower();
                     if (arg_l.StartsWith("/targetguid=")) {
-                        config.Target_Guid = arg.Substring("/targetguid=".Length);
+                        config.Add_TargetGuid(arg.Substring("/targetguid=".Length));
                         ++valid_args;
                     } else if (arg_l == "/vulnerable") {
                         config.Vulnerable = true;
@@ -196,8 +197,10 @@ namespace Symantec.CWoC {
         }
         private string GetConfigItemsZeroDay() {
             StringBuilder b = new StringBuilder();
-            if (config.Target_Guid != "")
-                b.Append(String.Format("\tTarget guid = {0}\n", config.Target_Guid));
+            if (config.Target_Guids.Count > 0)
+				foreach (string targetguid in config.Target_Guids) {
+					b.Append(String.Format("\tTarget guid = {0}\n", targetguid));
+				}
             b.Append(String.Format("\tVulnerable = {0}\n", config.Vulnerable));
             return b.ToString();
         }
