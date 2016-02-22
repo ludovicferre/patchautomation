@@ -73,7 +73,7 @@ namespace Symantec.CWoC.APIWrappers {
 					SoftwareBulletinResource resource = item as SoftwareBulletinResource;
 					PatchSoftwareUpdateResource resource2 = item as PatchSoftwareUpdateResource;
 					if (resource != null) {
-						guids2.AddRange(resource.SoftwareUpdateGuids);
+						guids2.AddRange<Guid>(resource.SoftwareUpdateGuids);
 					} else if (resource2 != null) {
 						guids2.Add(guid);
 					}
@@ -247,7 +247,7 @@ namespace Symantec.CWoC.APIWrappers {
 
         }
 
-        public static object ExecuteScalar(string sqlStatement) {
+        public static int ExecuteScalar(string sqlStatement) {
             try {
                 using (DatabaseContext context = DatabaseContext.GetContext()) {
                     SqlCommand cmd = context.CreateCommand() as SqlCommand;
@@ -255,7 +255,7 @@ namespace Symantec.CWoC.APIWrappers {
                     cmd.CommandText = sqlStatement;
                     Object result = cmd.ExecuteScalar();
 					
-                    return result;
+                    return (int) result;
                 }
             } catch (Exception e) {
                 Console.WriteLine("Error: {0}\nException message = {1}\nStack trace = {2}.", e.Message, e.InnerException, e.StackTrace);

@@ -23,9 +23,10 @@ set no_prv=find /v /i "related to previous warning"
 
 if "%1"=="7.1" goto build-7.1
 if "%1"=="7.5" goto build-7.5
+if "%1"=="8.0" goto build-8.0
+
 
 :build-7.6
-
 
 set ver1=v4.0_7.6.1383.0__d516cb311cfb6e4f
 set ver2=v4.0_7.6.1395.0__d516cb311cfb6e4f
@@ -67,5 +68,34 @@ cmd /c %csc% /reference:%gac%\%asm%\%ver1%\%asm%.dll /reference:%gac%\%airm%\%ve
 cmd /c %csc% /reference:%gac%\%asm%\%ver1%\%asm%.dll /reference:%gac%\%airm%\%ver1%\%airm%.dll /reference:%gac%\%acm%\%ver1%\%acm%.dll /reference:%gac%\%ans%\%ver1%\%ans%.dll /reference:%gac%\%ars%\%ver1%\%ars%.dll /reference:%gac%\%adb%\%ver1%\%adb%.dll /reference:%gac%\%asi%\%ver1%\%asi%.dll /reference:%gac%\%ats%\%ver3%\%ats%.dll /reference:%gac%\%apm%\%ver2%\%apm%.dll /reference:%gac%\%atc%\%ver3%\%atc%.dll /reference:%gac%\%adn%\%ver3%\%adn%.dll /out:PatchAutomation-7.1.exe PatchAutomation.cs Constant.cs APIWrapper-7.1.cs CLIConfig.cs CLIInit.cs
 
 cmd /c %csc% /reference:%gac%\%asm%\%ver1%\%asm%.dll /reference:%gac%\%airm%\%ver1%\%airm%.dll /reference:%gac%\%acm%\%ver1%\%acm%.dll /reference:%gac%\%ans%\%ver1%\%ans%.dll /reference:%gac%\%ars%\%ver1%\%ars%.dll /reference:%gac%\%adb%\%ver1%\%adb%.dll /reference:%gac%\%asi%\%ver1%\%asi%.dll /reference:%gac%\%ats%\%ver3%\%ats%.dll /reference:%gac%\%apm%\%ver2%\%apm%.dll /reference:%gac%\%atc%\%ver3%\%atc%.dll /reference:%gac%\%adn%\%ver3%\%adn%.dll /out:PatchExclusion-7.1.exe patchexclusion.cs APIWrapper-7.1.cs Constant.cs
+
+
+:build-8.0
+
+set ver1=v4.0_8.0.2240.0__d516cb311cfb6e4f
+set ver2=v4.0_8.0.2221.0__99b1e4cc0d03f223
+set ver3=v4.0_8.0.2217.0__d516cb311cfb6e4f
+set ver4=v4.0_8.0.2202.0__d516cb311cfb6e4f
+set ver5=v4.0_8.0.2215.0__d516cb311cfb6e4f
+
+set invrm=%airm%\%ver4%\%airm%
+set  softm=%asm%\%ver5%\%asm%
+set atrscm=%acm%\%ver1%\%acm%
+set atrsns=%ans%\%ver1%\%ans%
+set atrsrx=%ars%\%ver1%\%ars%
+set atrstm=%ats%\%ver2%\%ats%
+set atrstc=%atc%\%ver2%\%atc%
+set atrsdn=%adn%\%ver2%\%adn%
+set atrspm=%apm%\%ver3%\%apm%
+
+set fullref=/reference:%gac%\%softm%.dll /reference:%gac%\%invrm%.dll /reference:%gac%\%atrscm%.dll /reference:%gac%\%atrsns%.dll /reference:%gac%\%atrsrx%.dll /reference:%gac%\%adb%\%ver1%\%adb%.dll /reference:%gac%\%asi%\%ver1%\%asi%.dll /reference:%gac%\%atrstm%.dll /reference:%gac%\%atrspm%.dll /reference:%gac%\%atrstc%.dll /reference:%gac%\%atrsdn%.dll
+
+cmd /c %csc% %fullref% /out:ZeroDayPatch-8.0.exe ZeroDayPatch.cs Constant.cs APIWrapper.cs CLIConfig.cs CLIInit.cs | %no_obs% | %no_pol% | %no_prv%
+
+cmd /c %csc% %fullref% /out:PatchAutomation-8.0.exe PatchAutomation.cs Constant.cs APIWrapper.cs CLIConfig.cs CLIInit.cs | %no_obs% | %no_pol% | %no_prv%
+
+cmd /c %csc% %fullref% /out:PatchExclusion-8.0.exe patchexclusion.cs APIWrapper.cs Constant.cs | %no_obs% | %no_pol% | %no_prv%
+
+goto end
 
 :end
