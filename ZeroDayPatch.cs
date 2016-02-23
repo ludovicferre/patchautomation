@@ -226,7 +226,7 @@ namespace Symantec.CWoC {
             } else {
                 sp_used = @"exec spPMCoreReport_AllSoftwareBulletins";
             }
-            Console.WriteLine("# Using {0} to get bulletin candidates.", sp_used);
+            Console.WriteLine("# Using \"{0}\" to get bulletin candidates.", sp_used);
 
             return DatabaseAPI.GetTable(sp_used);
         }
@@ -272,7 +272,7 @@ namespace Symantec.CWoC {
                     #endregion
 
                     if (config.Debug)
-                        Console.WriteLine("# Field positions are:\n\tBulletin={0}\n\tReleased={1}\n\tResourceGuid={2}\n\tSeverity={3}", pos_bulletin, pos_released, pos_res_guid, pos_severity);
+                        Console.WriteLine("# Field positions are:\n\tBulletin={0}\n\tReleased={1}\n\tResourceGuid={2}\n\tSeverity={3}\n\tVendor={4}", pos_bulletin, pos_released, pos_res_guid, pos_severity, pos_vendor);
 
                     if (field_init) {
                         while (sqlRdr.Read()) {
@@ -299,13 +299,13 @@ namespace Symantec.CWoC {
                             }
                             #endregion
 
-                            if (config.Debug)
-                                Console.WriteLine("Bulletin guid={0}, severity={1}, released={2}", bguid, sev, dt.ToString("yyyy-MM-dd"));
                             if ((sev.ToLower() == config.Severity.ToLower() || config.Severity == "*") && dt >= config.Released_After && dt <= config.Released_Before ) {
-                                if (config.Debug)
-                                    Console.WriteLine("### WE HAVE A MATCH ###");
-                                if (pos_vendor == -1 || config.Vendor_Name == bull_vendor || config.Vendor_Name == "*")
-                                bulletin_collection.Add(bguid);
+                                if (pos_vendor == -1 || config.Vendor_Name == bull_vendor || config.Vendor_Name == "*") {
+									if (config.Debug) {
+										Console.WriteLine("\tWe have a match: {0} from {1}", bull_name , bull_vendor);
+									}
+									bulletin_collection.Add(bguid);
+								}
                             }
                         }
                     } else {
