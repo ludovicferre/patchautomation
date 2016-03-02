@@ -323,7 +323,7 @@ namespace Symantec.CWoC {
 
             string test_sql = @"select 1 from sysobjects where type = 'P' and name = 'ZeroDayPatch_GetVulnerableMachines-" + Constant.ZERODAY_SCHEMA_VERSION + "'";
 
-            if (DatabaseAPI.ExecuteScalar(test_sql) == 1) {
+            if ((int) DatabaseAPI.ExecuteScalar(test_sql) == 1) {
                 return true;
             }
 

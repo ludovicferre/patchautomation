@@ -90,12 +90,18 @@ set atrspm=%apm%\%ver3%\%apm%
 
 set fullref=/reference:%gac%\%softm%.dll /reference:%gac%\%invrm%.dll /reference:%gac%\%atrscm%.dll /reference:%gac%\%atrsns%.dll /reference:%gac%\%atrsrx%.dll /reference:%gac%\%adb%\%ver1%\%adb%.dll /reference:%gac%\%asi%\%ver1%\%asi%.dll /reference:%gac%\%atrstm%.dll /reference:%gac%\%atrspm%.dll /reference:%gac%\%atrstc%.dll /reference:%gac%\%atrsdn%.dll
 
-cmd /c %csc% %fullref% /out:ZeroDayPatch-8.0.exe ZeroDayPatch.cs Constant.cs APIWrapper.cs CLIConfig.cs CLIInit.cs | %no_obs% | %no_pol% | %no_prv%
 
-cmd /c %csc% %fullref% /out:PatchAutomation-8.0.exe PatchAutomation.cs Constant.cs APIWrapper.cs CLIConfig.cs CLIInit.cs | %no_obs% | %no_pol% | %no_prv%
+set id=8.0
 
-cmd /c %csc% %fullref% /out:PatchExclusion-8.0.exe patchexclusion.cs APIWrapper.cs Constant.cs | %no_obs% | %no_pol% | %no_prv%
+cmd /c %csc% %fullref% /out:ZeroDayPatch-%id%.exe ZeroDayPatch.cs Constant.cs APIWrapper.cs CLIConfig.cs CLIInit.cs | %no_obs% | %no_pol% | %no_prv%
 
+cmd /c %csc% %fullref% /out:PatchAutomation-%id%.exe PatchAutomation.cs Constant.cs APIWrapper.cs CLIConfig.cs CLIInit.cs | %no_obs% | %no_pol% | %no_prv%
+
+cmd /c %csc% %fullref% /out:PatchExclusion-%id%.exe patchexclusion.cs APIWrapper.cs Constant.cs | %no_obs% | %no_pol% | %no_prv%
+
+cmd /c %csc% %fullref% /out:EnableBulletinByName-%id%.exe EnableBulletinByName.cs APIWrapper.cs
+
+cmd /c %csc% %fullref% /out:GetDisabledBulletins-%id%.exe GetDisabledBulletins.cs
 goto end
 
 :end
