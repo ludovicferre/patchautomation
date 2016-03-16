@@ -321,7 +321,7 @@ namespace Symantec.CWoC {
 
         public bool procedure_installed() {
 
-            string test_sql = @"select 1 from sysobjects where type = 'P' and name = 'ZeroDayPatch_GetVulnerableMachines-" + Constant.ZERODAY_SCHEMA_VERSION + "'";
+            string test_sql = @"select count(*) from sysobjects where type = 'P' and name = 'ZeroDayPatch_GetVulnerableMachines-" + Constant.ZERODAY_SCHEMA_VERSION + "'";
 
             if ((int) DatabaseAPI.ExecuteScalar(test_sql) == 1) {
                 return true;
@@ -343,7 +343,8 @@ namespace Symantec.CWoC {
         public string[] legacy_spnames = new string[]{
             "spBulletinsWithVulnerableClients",
             "ZeroDayPatch_GetVulnerableMachines-0001",
-            "ZeroDayPatch_GetVulnerableMachines-0002"
+            "ZeroDayPatch_GetVulnerableMachines-0002",
+            "ZeroDayPatch_GetVulnerableMachines-0003"
             };
     }
 }
