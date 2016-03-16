@@ -251,7 +251,6 @@ BEGIN
 	  LEFT JOIN #tmpSeverityString tss
 		ON tss.RefName = LOWER(srl.SeverityName)
 
-	  DROP TABLE #tmpSeverityString
 
 	SELECT cid._ResourceGuid
 	  INTO #tempScopedResources
@@ -263,7 +262,7 @@ BEGIN
 	SELECT cb1.BulletinGuid, COUNT(cb1._ResourceGuid)AS Applicable, SUM(cb1.Installed) AS Installed
 	  INTO #tmpBulletinCnt
 	  FROM (
-			SELECT bul._ResourceGuid AS [BulletinGuid], sua._ResourceGuid, CASE WHEN COUNT(sua.UpdateGuid) = SUM( CASE WHEN sui.UpdateGuid IS NULL THEN 0 WHEN ses.PendingSince IS NULL THEN 1 ELSE 0 END ) THEN 1 ELSE 0 END   AS [Installed]
+			SELECT bul._ResourceGuid AS [BulletinGuid], sua._ResourceGuid, CASE WHEN COUNT(sua.UpdateGuid) = SUM( CASE WHEN sui.UpdateGuid IS NULL THEN 0 ELSE 1 END ) THEN 1 ELSE 0 END   AS [Installed]
 			  FROM vPMWindows_UpdateApplicable sua
 			  JOIN ResourceAssociation b2u 
 				ON b2u.ChildResourceGuid = sua.UpdateGuid
@@ -272,9 +271,6 @@ BEGIN
 			  JOIN #tempScopedResources res ON res._ResourceGuid = sua._ResourceGuid
 			  LEFT JOIN vPMWindows_UpdateInstalled  sui ON sui.UpdateGuid    = sua.UpdateGuid
 			   AND sui._ResourceGuid = sua._ResourceGuid
-			  LEFT JOIN vPMCore_ComputersPendingRebootByPackage ses 
-				ON ses.SoftwareUpdateGuid = sua.UpdateGuid
-			   AND ses._ResourceGuid = sua._ResourceGuid
 			 WHERE sua.UpdateGuid NOT IN -- filter out supersede applicable updates
 					(
 						SELECT DISTINCT ChildResourceGuid
@@ -285,7 +281,6 @@ BEGIN
 			) AS cb1
 	 GROUP BY cb1.BulletinGuid
 
-	  DROP TABLE #tempScopedResources
 
 	SELECT  distinct(swb._ResourceGuid)       AS [_ResourceGuid],
 				it.Name                 AS [Bulletin],
@@ -306,6 +301,8 @@ BEGIN
 
 	  DROP TABLE #tmpBulletinNames
 	  DROP TABLE #tmpBulletinCnt
+	  DROP TABLE #tmpSeverityString
+	  DROP TABLE #tempScopedResources
 END
 ";
         #endregion
