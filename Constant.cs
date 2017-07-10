@@ -6,8 +6,8 @@ namespace Symantec.CWoC
 {
     class Constant
     {
-        public const string VERSION = "11";
-        public const string ZERODAY_SCHEMA_VERSION = "0003";
+        public const string VERSION = "12";
+        public const string ZERODAY_SCHEMA_VERSION = "0004";
 
         #region SQL STRINGS
         public const string PATCH_EXCLUSION_QUERY = @"if exists (select 1 from sys.objects where name = 'patchautomation_excluded') select bulletin from patchautomation_excluded";
@@ -218,7 +218,6 @@ Supported commands:
 CREATE PROCEDURE [ZeroDayPatch_GetVulnerableMachines-" + ZERODAY_SCHEMA_VERSION + @"]
 AS
 BEGIN
-
 	SELECT LOWER(SUBSTRING( sts.StringRef, 10, 100 )) AS [RefName], sts.[String]
 	  INTO #tmpSeverityString
 	  FROM (
@@ -236,12 +235,10 @@ BEGIN
 	    ON sts.[BaseGuid] = ref.[BaseGuid]
 	   AND sts.[StringRef] = ref.[StringRef]
 	   AND sts.[Culture]   = fnc.[Culture]
-
+ 
 	SELECT swb._ResourceGuid, swb.FirstReleaseDate AS [Released], ISNULL( tss.[String], srl.SeverityName ) AS [Severity]
 	  INTO #tmpBulletinNames
 	  FROM Inv_Software_Bulletin swb
-	  JOIN ItemActive asb
-		ON asb.Guid = swb._ResourceGuid
 	  JOIN Inv_PM_Severity_Rating sr
 		ON sr._ResourceGuid  = swb._ResourceGuid
 	   AND sr.SeverityRatingSystemGuid <> '6CCEF81F-F791-4DC4-8FC6-90D149FC0187'
@@ -251,36 +248,43 @@ BEGIN
 	  LEFT JOIN #tmpSeverityString tss
 		ON tss.RefName = LOWER(srl.SeverityName)
 
-
 	SELECT cid._ResourceGuid
 	  INTO #tempScopedResources
 	  FROM Inv_AeX_AC_Identification cid 
 	  LEFT JOIN vPMCore_GetAllRetiredMachines ret
 	    ON ret.Guid = cid._ResourceGuid
+      JOIN  Inv_AeX_AC_Client_Agent a
+        ON a._ResourceGuid = cid._ResourceGuid
+       AND a.[Agent Name] = 'Altiris Software Update Agent'
+       AND (dbo.fnVersionCompare(a.[Product Version], '8.0.1000') >= 0)   
 	 WHERE ret.Guid IS NULL -- exclude the retired machine
 
-	SELECT cb1.BulletinGuid, COUNT(cb1._ResourceGuid)AS Applicable, SUM(cb1.Installed) AS Installed
+	SELECT cb1.BulletinGuid, COUNT(cb1._ResourceGuid) AS Applicable, SUM(cb1.Installed) AS Installed
 	  INTO #tmpBulletinCnt
 	  FROM (
-			SELECT bul._ResourceGuid AS [BulletinGuid], sua._ResourceGuid, CASE WHEN COUNT(sua.UpdateGuid) = SUM( CASE WHEN sui.UpdateGuid IS NULL THEN 0 ELSE 1 END ) THEN 1 ELSE 0 END   AS [Installed]
-			  FROM vPMWindows_UpdateApplicable sua
-			  JOIN ResourceAssociation b2u 
-				ON b2u.ChildResourceGuid = sua.UpdateGuid
-			   AND b2u.ResourceAssociationTypeGuid = '7EEAB03A-839C-458D-9AF2-55DB6B173293'	-- SWB to SWU
-			  JOIN #tmpBulletinNames bul ON bul._ResourceGuid = b2u.ParentResourceGuid
-			  JOIN #tempScopedResources res ON res._ResourceGuid = sua._ResourceGuid
-			  LEFT JOIN vPMWindows_UpdateInstalled  sui ON sui.UpdateGuid    = sua.UpdateGuid
-			   AND sui._ResourceGuid = sua._ResourceGuid
-			 WHERE sua.UpdateGuid NOT IN -- filter out supersede applicable updates
-					(
-						SELECT DISTINCT ChildResourceGuid
-						  FROM ResourceAssociation
-						 WHERE ResourceAssociationTypeGuid = '644A995E-211A-4D94-AA8A-788413B7BE5D'
-					)
-			 GROUP BY bul._ResourceGuid, sua._ResourceGuid
+                SELECT      bul._ResourceGuid AS [BulletinGuid],  
+                            sua._ResourceGuid,  
+                            CASE WHEN COUNT(sua.SoftwareUpdateGuid) = SUM( CASE WHEN sus.DistributionStatus IS NULL AND sui.SoftwareUpdateGuid IS NOT NULL THEN 1  
+                 WHEN sus.DistributionStatus = 128 THEN 1  -- STATE_INSTALLED  
+                 WHEN sus.DistributionStatus = 256 THEN 1  -- STATE_INSTALLED_SUA  
+                 WHEN sus.DistributionStatus = 131072 THEN 1  -- STATE_INSTALLED_WITH_ERRORS  
+                 -- WHEN sus.DistributionStatus = 8192 THEN 1 -- STATE_SUPERSEDED                   
+                 ELSE 0 END )  
+                                 THEN 1  
+                                 ELSE 0 END   AS [Installed]  
+                    FROM    Inv_Applicable_Windows_Software_Update sua  
+                    JOIN    ResourceAssociation         b2u ON b2u.ChildResourceGuid = sua.SoftwareUpdateGuid  
+                                                           AND b2u.ResourceAssociationTypeGuid = '7EEAB03A-839C-458D-9AF2-55DB6B173293' -- SWB to SWU  
+                    JOIN    #tmpBulletinNames           bul ON bul._ResourceGuid = b2u.ParentResourceGuid  
+                    JOIN    #tempScopedResources        res ON res._ResourceGuid = sua._ResourceGuid  
+                    LEFT JOIN Inv_Installed_Windows_Software_Update  sui ON sui.SoftwareUpdateGuid    = sua.SoftwareUpdateGuid  
+                                                           AND sui._ResourceGuid = sua._ResourceGuid  
+        LEFT JOIN Inv_Software_Update_Distribution_Status sus ON sus._ResourceGuid = sua._ResourceGuid and sus.SoftwareUpdateGuid = sua.SoftwareUpdateGuid  
+     LEFT JOIN ResourceAssociation supersede ON supersede.ChildResourceGuid = sua.SoftwareUpdateGuid and supersede.ResourceAssociationTypeGuid = '644A995E-211A-4D94-AA8A-788413B7BE5D'  
+                    WHERE   supersede.ParentResourceGuid IS NULL  -- filter out supersede applicable updates                              
+                    GROUP BY bul._ResourceGuid, sua._ResourceGuid  
 			) AS cb1
 	 GROUP BY cb1.BulletinGuid
-
 
 	SELECT  distinct(swb._ResourceGuid)       AS [_ResourceGuid],
 				it.Name                 AS [Bulletin],
@@ -303,6 +307,7 @@ BEGIN
 	  DROP TABLE #tmpBulletinCnt
 	  DROP TABLE #tmpSeverityString
 	  DROP TABLE #tempScopedResources
+
 END
 ";
         #endregion
