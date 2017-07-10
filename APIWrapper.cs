@@ -55,16 +55,22 @@ namespace Symantec.CWoC.APIWrappers {
     class PatchAPI {
 		public bool IsStaged(string bulletinGuids) {
 				bool flag;
-				GuidCollection nonstagedUpdates = SoftwareUpdateAdvertismentSetPolicy.GetNonstagedUpdates(ParseGuidList(ResolveToUpdates(bulletinGuids), true));
+				GuidCollection nonstagedUpdates = GetNonstagedUpdates(ParseGuidList(ResolveToUpdates(bulletinGuids), true));
 				flag = (nonstagedUpdates == null) || (nonstagedUpdates.Count == 0);
 				return flag;
 		}
+		
+		public static GuidCollection GetNonstagedUpdates(IList<Guid> gcUpdates){
+			return new GuidCollection(PMDal.PerformWithDlr<GuidCollection>(delegate {
+				return Altiris.NS.DataAccessLayer.DataAccessLayer<PatchManagementCoreResourcesDAL>.Instance.spPMCore_SoftwareUpdateListIsNotDownloaded(new GuidCollection(gcUpdates));
+			}));
+	}
 
 		public string ResolveToUpdates(string bulletinGuids) {
 			string str;
-			GuidCollection guids = ParseGuidList(bulletinGuids, true);
+			IList<Guid> guids = ParseGuidList(bulletinGuids, true);
 			if ((guids != null) && (guids.Count > 0)) {
-				GuidCollection guids2 = new GuidCollection();
+				List<Guid> guids2 = new List<Guid>();
 				foreach (Guid guid in guids) {
 					IItem item = Item.GetItem(guid, 0);
 					if (item == null) {
@@ -73,12 +79,12 @@ namespace Symantec.CWoC.APIWrappers {
 					SoftwareBulletinResource resource = item as SoftwareBulletinResource;
 					PatchSoftwareUpdateResource resource2 = item as PatchSoftwareUpdateResource;
 					if (resource != null) {
-						guids2.AddRange<Guid>(resource.SoftwareUpdateGuids);
+						guids2.AddRange(resource.SoftwareUpdateGuids);
 					} else if (resource2 != null) {
 						guids2.Add(guid);
 					}
 				}
-				return ArrayOps.Join((IEnumerable<Guid>) guids2.RemoveDuplicates(), ",");
+				return ArrayOps.Join((IEnumerable<Guid>) guids2, ",");
 			}
 			str = string.Empty;
 			return str;
@@ -87,15 +93,42 @@ namespace Symantec.CWoC.APIWrappers {
 		public int EnsureStaged(string bulletinGuids, bool sync) {
 			int num;
 			ITaskExecutionInstance inst = null;
-			GuidCollection guids = SoftwareUpdateAdvertismentSetPolicy.EnsureUpdatesStaged((IList<Guid>) ParseGuidList(ResolveToUpdates(bulletinGuids), true), sync, out inst);
+			GuidCollection guids = EnsureUpdatesStaged((IList<Guid>) ParseGuidList(ResolveToUpdates(bulletinGuids), true), sync, out inst);
 			return num = (guids != null) ? guids.Count : -1;
+		}
+		
+
+		public static GuidCollection EnsureUpdatesStaged(IList<Guid> guids, bool sync, out ITaskExecutionInstance inst){
+			inst = null;
+			GuidCollection nonstagedUpdates = GetNonstagedUpdates(guids);
+			if (nonstagedUpdates.Count <= 0){
+				return nonstagedUpdates;
+			}
+			EventLog.ReportVerbose(string.Format("Staging {0} updates...", nonstagedUpdates.Count), "Stage & Distribute");
+			try {
+				for (int i = 0; i < 5; i++){
+					inst = Item.GetItem<DownloadSWUPackageTask>(Tasks.Singletons70.DownloadSWUPackage, ItemLoadFlags.WriteableIgnoreAll).CreateInstanceForReplication(nonstagedUpdates, DownloadFilter.Auto, DownloadSWUPackageTask.EReason.DOWNLOAD_STAGE);
+					if (sync){
+						TaskHelper.WaitForTaskToComplete(inst);
+					} else {
+						return nonstagedUpdates;
+					}
+					if (inst.InstanceStatus == Altiris.TaskManagement.Common.TaskInstanceStatus.Completed) {
+						return nonstagedUpdates;
+					}
+				}
+			}
+			catch (Exception exception) {
+				TraceOps.TRACE(exception);
+			}
+			throw new Exception(string.Format("Unable to stage '{0}' updates.", nonstagedUpdates.Count));
 		}
 
 		public string ResolveToPolicies(string bulletinGuids) {
 				string str;
-				GuidCollection guids = ParseGuidList(ResolveToUpdates(bulletinGuids), true);
+				IList<Guid> guids = ParseGuidList(ResolveToUpdates(bulletinGuids), true);
 				if (guids != null) {
-						GuidCollection guids2 = new GuidCollection();
+						List<Guid> guids2 = new List<Guid>();
 						using (IEnumerator<Guid> enumerator = guids.GetEnumerator()) {
 								while (enumerator.MoveNext()) {
 										Func<TypedRecordset<ItemReferenceRow>> func = null;
@@ -108,14 +141,14 @@ namespace Symantec.CWoC.APIWrappers {
 										}
 								}
 						}
-						return ArrayOps.Join((IEnumerable<Guid>) guids2.RemoveDuplicates(), ",");
+						return ArrayOps.Join((IEnumerable<Guid>) guids2, ",");
 				}
 				str = string.Empty;
 				return str;
 		}
 		
-		public GuidCollection ParseGuidList(string list, bool unique) {
-				GuidCollection guids = new GuidCollection();
+		public IList<Guid> ParseGuidList(string list, bool unique) {
+				List<Guid> guids = new List<Guid>();
 				foreach (string str in list.Split(new char[] { ',', ';', '|' })) {
 						Guid guid = GuidOps.Str2Guid(str.Trim());
 						if (guid != Guid.Empty) {
@@ -125,7 +158,7 @@ namespace Symantec.CWoC.APIWrappers {
 				if (!unique) {
 						return guids;
 				}
-				return guids.RemoveDuplicates();
+				return guids;
 		}
 		
         public string CreateUpdatePolicy(string name, string bulletinGuids, bool enabled) {
@@ -134,7 +167,7 @@ namespace Symantec.CWoC.APIWrappers {
 
         public string CreateUpdatePolicy(string name, string bulletinGuids, string targetGuid, bool enabled) {
             
-            GuidCollection suGuids = ParseGuidList(ResolveToUpdates(bulletinGuids), true);
+            IList<Guid> suGuids = ParseGuidList(ResolveToUpdates(bulletinGuids), true);
             if (suGuids == null) {
                 return string.Empty;
             }
@@ -149,9 +182,13 @@ namespace Symantec.CWoC.APIWrappers {
             if (item == null) {
                 return string.Format("Unable to load vendor policy {0}", platformPolicy);
             }
+			GuidCollection gc = new GuidCollection();
+			foreach (Guid g in suGuids) {
+				gc.Add(g);
+			}
             SoftwareUpdateAdvertismentSet newAdvertismentSet = item.GetNewAdvertismentSet();
-            newAdvertismentSet.Initialise(suGuids);
-            SoftwareUpdateDistributionTask task = Item.GetItem(Tasks.Singletons70.SoftwareUpdateDistrbutionTask, ItemLoadFlags.WriteableIgnoreAll) as SoftwareUpdateDistributionTask;
+            newAdvertismentSet.Initialise(gc);
+           SoftwareUpdateDistributionTask task = Item.GetItem(Tasks.Singletons70.SoftwareUpdateDistrbutionTask, ItemLoadFlags.WriteableIgnoreAll) as SoftwareUpdateDistributionTask;
             if (task == null) {
                 return "Cannot initialise of SoftwareUpdateDistrbutionTask. Item is missing from the database";
             }
@@ -173,7 +210,7 @@ namespace Symantec.CWoC.APIWrappers {
 		
         public string CreateUpdatePolicy(string name, string bulletinGuids, List<string> targetGuids, bool enabled) {
             
-            GuidCollection suGuids = ParseGuidList(ResolveToUpdates(bulletinGuids), true);
+            IList<Guid> suGuids = ParseGuidList(ResolveToUpdates(bulletinGuids), true);
             if (suGuids == null) {
                 return string.Empty;
             }
@@ -189,7 +226,7 @@ namespace Symantec.CWoC.APIWrappers {
                 return string.Format("Unable to load vendor policy {0}", platformPolicy);
             }
             SoftwareUpdateAdvertismentSet newAdvertismentSet = item.GetNewAdvertismentSet();
-            newAdvertismentSet.Initialise(suGuids);
+            newAdvertismentSet.Initialise((GuidCollection)suGuids);
             SoftwareUpdateDistributionTask task = Item.GetItem(Tasks.Singletons70.SoftwareUpdateDistrbutionTask, ItemLoadFlags.WriteableIgnoreAll) as SoftwareUpdateDistributionTask;
             if (task == null) {
                 return "Cannot initialise of SoftwareUpdateDistrbutionTask. Item is missing from the database";
@@ -248,19 +285,20 @@ namespace Symantec.CWoC.APIWrappers {
         }
 
         public static object ExecuteScalar(string sqlStatement) {
+			object result;
             try {
                 using (DatabaseContext context = DatabaseContext.GetContext()) {
                     SqlCommand cmd = context.CreateCommand() as SqlCommand;
 
                     cmd.CommandText = sqlStatement;
-                    Object result = cmd.ExecuteScalar();
+                    result = cmd.ExecuteScalar();
 					
-                    return result;
                 }
             } catch (Exception e) {
                 Console.WriteLine("Error: {0}\nException message = {1}\nStack trace = {2}.", e.Message, e.InnerException, e.StackTrace);
                 throw new Exception("Failed to execute scalar SQL command...");
             }
+            return result;
         }
     }
 
