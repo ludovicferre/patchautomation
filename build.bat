@@ -23,8 +23,40 @@ set no_prv=find /v /i "related to previous warning"
 
 if "%1"=="7.1" goto build-7.1
 if "%1"=="7.5" goto build-7.5
+if "%1"=="7.6" goto build-7.6
 if "%1"=="8.0" goto build-8.0
 
+:build-8.1
+
+set ver1=v4.0_8.1.4528.0__d516cb311cfb6e4f
+set atrscm=%acm%\%ver1%\%acm%
+set atrsns=%ans%\%ver1%\%ans%
+set atrsrx=%ars%\%ver1%\%ars%
+set atrssi=%asi%\%ver1%\%asi%
+
+set ver2=v4.0_8.1.4511.0__99b1e4cc0d03f223
+set atrstm=%ats%\%ver2%\%ats%
+set atrstc=%atc%\%ver2%\%atc%
+set atrsdn=%adn%\%ver2%\%adn%
+
+set ver3=v4.0_8.1.4538.0__d516cb311cfb6e4f
+set atrspm=%apm%\%ver3%\%apm%
+
+set ver4=v4.0_8.1.4502.0__d516cb311cfb6e4f
+set  invrm=%airm%\%ver4%\%airm%
+
+set ver5=v4.0_8.1.4508.0__d516cb311cfb6e4f
+set  softm=%asm%\%ver5%\%asm%
+
+set fullref=/reference:%gac%\%softm%.dll /reference:%gac%\%invrm%.dll /reference:%gac%\%atrscm%.dll /reference:%gac%\%atrsns%.dll /reference:%gac%\%atrsrx%.dll /reference:%gac%\%adb%\%ver1%\%adb%.dll /reference:%gac%\%atrssi%.dll /reference:%gac%\%atrstm%.dll /reference:%gac%\%atrspm%.dll /reference:%gac%\%atrstc%.dll /reference:%gac%\%atrsdn%.dll
+
+set id=8.1
+
+cmd /c %csc% %fullref% /out:ZeroDayPatch-%id%.exe ZeroDayPatch.cs Constant.cs APIWrapper.cs CLIConfig.cs CLIInit.cs | %no_obs% | %no_pol% | %no_prv%
+cmd /c %csc% %fullref% /out:PatchAutomation-%id%.exe PatchAutomation.cs Constant.cs APIWrapper.cs CLIConfig.cs CLIInit.cs | %no_obs% | %no_pol% | %no_prv%
+cmd /c %csc% %fullref% /out:PatchExclusion-%id%.exe patchexclusion.cs APIWrapper.cs Constant.cs | %no_obs% | %no_pol% | %no_prv%
+
+goto end
 
 :build-7.6
 
