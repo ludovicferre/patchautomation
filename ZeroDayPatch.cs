@@ -6,7 +6,6 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Security;
 using System.Security.Principal;
-
 using Altiris.NS;
 using Altiris.Resource;
 using Altiris.NS.ItemManagement;
@@ -164,7 +163,12 @@ namespace Symantec.CWoC {
                         Console.WriteLine("\tSoftware update policy created!");
                     } else if (config.Retarget) {
                         if (policies_arr.Length > 0) {
-                            foreach (string p in policies_arr) {
+                            /* ENHANCEMENT: 2018-01-24; There is no need to update each policy - one of them will update the "parent" policy which is enough :D.
+                             *                          This avoid doing the same task 153 times when an Office policy as 153 updates!
+                             * 
+                             * */
+                            //                            foreach (string p in policies_arr) {
+                            string p = policies_arr[0];
                                 if (p.Length != 36)
                                     continue;
 
@@ -193,7 +197,7 @@ namespace Symantec.CWoC {
                                         Console.WriteLine("\tSaving the policy failed 10 times. Moving on to the next item.");
                                     }
                                 }
-                            }
+//                            } // Commented out for each node removed to fix 
                         }
                     } else {
                         Console.WriteLine("\tA policy already exists for this bulletin.");
